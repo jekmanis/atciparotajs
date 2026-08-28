@@ -176,7 +176,7 @@ DECIMAL_LEADING_ZERO_CASES = [
     ("1237,6 vienības",  "tūkstoš divsimt trīsdesmit septiņas komats sešas vienības"),
     ("1237,60 vienības", "tūkstoš divsimt trīsdesmit septiņas komats sešdesmit vienības"),
     ("10,01 punkti",     "desmit komats nulle vieni punkti"),
-    ("10,01 punkts",     "desmit komats nulle vieni punkts"),
+    ("10,01 punkts",     "desmit komats nulle viens punkts"),
     ("0,05",         "nulle komats nulle pieci"),
     ("0,5",          "nulle komats pieci"),
     ("2,003 kg",     "divi komats nulle nulle trīs kilogrami"),
@@ -588,20 +588,22 @@ CURRENCY_CONVERT_CASES = [
 ]
 
 # ============================================================
-# Valūta ar vārdu "eiro"/"euro" (spelled-out currency name as trigger)
+# Valūta, rakstīta ar vārdiem (spelled-out currency name — NOT a currency trigger)
+#
+# Only the formal "EUR" and "€" split an amount into units and cents; when the
+# currency is written out as a word the number is read as a plain decimal, with
+# the leading zeros of the fractional part spoken.
 # ============================================================
 CURRENCY_WORD_CASES = [
-    ("1237,06 eiro", "tūkstoš divsimt trīsdesmit septiņi eiro un seši centi"),
-    ("1237,6 eiro",  "tūkstoš divsimt trīsdesmit septiņi eiro un sešdesmit centu"),
-    ("1237,60 eiro", "tūkstoš divsimt trīsdesmit septiņi eiro un sešdesmit centu"),
-    ("10,01 eiro",   "desmit eiro un viens cents"),
+    ("1237,06 eiro", "tūkstoš divsimt trīsdesmit septiņi komats nulle seši eiro"),
+    ("1237,6 eiro",  "tūkstoš divsimt trīsdesmit septiņi komats seši eiro"),
+    ("1237,60 eiro", "tūkstoš divsimt trīsdesmit septiņi komats sešdesmit eiro"),
+    ("10,01 eiro",   "desmit komats nulle viens eiro"),
     ("1 eiro",       "viens eiro"),
     ("5 eiro",       "pieci eiro"),
     ("11 eiro",      "vienpadsmit eiro"),
-    ("2,50 euro",    "divi eiro un piecdesmit centu"),
-    ("1,82 EURO",    "viens eiro un astoņdesmit divi centi"),
-    ("Prece maksā 2,50 eiro.", "Prece maksā divus eiro un piecdesmit centu."),
-    # No amount — the word is left alone
+    ("2,50 euro",    "divi komats piecdesmit euro"),
+    ("Prece maksā 2,50 eiro.", "Prece maksā divi komats piecdesmit eiro."),
     ("eiro kurss",   "eiro kurss"),
 ]
 

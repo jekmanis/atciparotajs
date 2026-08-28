@@ -10,7 +10,7 @@ Numbers are inflected to agree in gender and grammatical case with the following
 - **Ordinal numbers** — `5. maijs` → `piektais maijs`
 - **Roman numerals** — `XIV gs.` → `četrpadsmitais gadsimts`
 - **Decimals/fractions** — `21,5 grami` → `divdesmit viens komats pieci grami`
-- **Currency** — `1237,06 EUR`, `1237,06 €` and `1237,06 eiro` → `tūkstoš divsimt trīsdesmit septiņi eiro un seši centi`
+- **Currency** — `1237,06 EUR` and `1237,06 €` → `tūkstoš divsimt trīsdesmit septiņi eiro un seši centi`
 - **Abbreviation expansion** — `gs.` → `gadsimts`, `km.` → `kilometrs`, and more
 - **Phone numbers** — spelled out digit by digit `{phone:67030638}` → `seši septiņi nulle trīs nulle seši trīs astoņi`
 

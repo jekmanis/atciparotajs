@@ -170,10 +170,6 @@ _CUR_SYM_AFTER = re.compile(_CUR_AMT + r'\s*([€$£])')
 _CUR_CODE_BEFORE = re.compile(r'\b(' + _CUR_CODES_RE + r')\s+' + _CUR_AMT, re.IGNORECASE)
 # Code after: 1,82 EUR  or  1.82EUR (no space)
 _CUR_CODE_AFTER = re.compile(_CUR_AMT + r'\s*(' + _CUR_CODES_RE + r')\b', re.IGNORECASE)
-# Spelled-out currency names: "1237,06 eiro" — so cents are read as cents, not as a decimal
-_CUR_WORD_MAP = {'eiro': 'EUR', 'euro': 'EUR'}
-_CUR_WORDS_RE = '|'.join(sorted(_CUR_WORD_MAP, key=len, reverse=True))
-_CUR_WORD_AFTER = re.compile(_CUR_AMT + r'\s+(' + _CUR_WORDS_RE + r')\b', re.IGNORECASE)
 
 
 def _parse_cur_amount(int_str: str, dec_str: str | None) -> tuple[int, int]:
@@ -462,10 +458,6 @@ def convert(text: str, expand_abbr: bool = True, no_roman: bool = False) -> str:
     text = _CUR_SYM_AFTER.sub(
         lambda m: _expand_cur(*_parse_cur_amount(m.group(1), m.group(2)),
                               _CURRENCY_SYMBOL_MAP[m.group(3)],
-                              _prev_word(text, m.start())), text)
-    text = _CUR_WORD_AFTER.sub(
-        lambda m: _expand_cur(*_parse_cur_amount(m.group(1), m.group(2)),
-                              _CUR_WORD_MAP[m.group(3).lower()],
                               _prev_word(text, m.start())), text)
 
     # Phone numbers must expand before abbreviations to prevent "tel." → "litrs"

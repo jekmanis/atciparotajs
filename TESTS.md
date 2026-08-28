@@ -574,6 +574,7 @@ Auto-generated after each `pytest` run. Shows every parametrised case with its l
 | `1237,6 vienības` | `tūkstoš divsimt trīsdesmit septiņas komats sešas vienības` | ✅ |
 | `1237,60 vienības` | `tūkstoš divsimt trīsdesmit septiņas komats sešdesmit vienības` | ✅ |
 | `10,01 punkti` | `desmit komats nulle vieni punkti` | ✅ |
+| `10,01 punkts` | `desmit komats nulle viens punkts` | ✅ |
 | `0,05` | `nulle komats nulle pieci` | ✅ |
 | `0,5` | `nulle komats pieci` | ✅ |
 | `2,003 kg` | `divi komats nulle nulle trīs kilogrami` | ✅ |
@@ -602,14 +603,13 @@ Auto-generated after each `pytest` run. Shows every parametrised case with its l
 
 | Input | Expected | Result |
 |-------|----------|--------|
-| `1237,06 eiro` | `tūkstoš divsimt trīsdesmit septiņi eiro un seši centi` | ✅ |
-| `1237,6 eiro` | `tūkstoš divsimt trīsdesmit septiņi eiro un sešdesmit centu` | ✅ |
-| `1237,60 eiro` | `tūkstoš divsimt trīsdesmit septiņi eiro un sešdesmit centu` | ✅ |
-| `10,01 eiro` | `desmit eiro un viens cents` | ✅ |
+| `1237,06 eiro` | `tūkstoš divsimt trīsdesmit septiņi komats nulle seši eiro` | ✅ |
+| `1237,6 eiro` | `tūkstoš divsimt trīsdesmit septiņi komats seši eiro` | ✅ |
+| `1237,60 eiro` | `tūkstoš divsimt trīsdesmit septiņi komats sešdesmit eiro` | ✅ |
+| `10,01 eiro` | `desmit komats nulle viens eiro` | ✅ |
 | `1 eiro` | `viens eiro` | ✅ |
 | `5 eiro` | `pieci eiro` | ✅ |
 | `11 eiro` | `vienpadsmit eiro` | ✅ |
-| `2,50 euro` | `divi eiro un piecdesmit centu` | ✅ |
-| `1,82 EURO` | `viens eiro un astoņdesmit divi centi` | ✅ |
-| `Prece maksā 2,50 eiro.` | `Prece maksā divus eiro un piecdesmit centu.` | ✅ |
+| `2,50 euro` | `divi komats piecdesmit euro` | ✅ |
+| `Prece maksā 2,50 eiro.` | `Prece maksā divi komats piecdesmit eiro.` | ✅ |
 | `eiro kurss` | `eiro kurss` | ✅ |
