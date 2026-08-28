@@ -1,6 +1,6 @@
 import sys
 import argparse
-from atciparotajs import convert
+from atciparotajs import convert, __version__
 
 
 def main():
@@ -8,6 +8,9 @@ def main():
     parser.add_argument("text", nargs="?", help="Text to convert")
     parser.add_argument("--no-expand-abbr", action="store_true")
     parser.add_argument("--no-roman", action="store_true")
+    parser.add_argument(
+        "--version", action="version", version=f"atciparotajs {__version__}"
+    )
     args = parser.parse_args()
 
     if args.text:

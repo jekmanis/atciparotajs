@@ -4,13 +4,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "atciparotajs"
-version = "0.1.4"
+dynamic = ["version"]
 description = "Latvian number-to-words converter for TTS preprocessing"
 readme = "README.md"
 requires-python = ">=3.10"
 
 [project.scripts]
 atciparotajs = "atciparotajs.__main__:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "atciparotajs.__version__"}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

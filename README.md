@@ -53,6 +53,9 @@ atciparotajs --no-expand-abbr "14. gs."
 
 # Disable Roman numeral expansion
 atciparotajs --no-roman "XIV gs."
+
+# Print the version
+atciparotajs --version
 ```
 
 ### Phone numbers
