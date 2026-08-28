@@ -82,6 +82,23 @@ Auto-generated after each `pytest` run. Shows every parametrised case with its l
 | `janvāra 15.` | `janvāra piecpadsmitais` | ✅ |
 | `ierādīja 3.` | `ierādīja trešais` | ✅ |
 
+## Acronym Not Roman
+
+| Input | Expected | Result |
+|-------|----------|--------|
+| `VID` | `VID` | ✅ |
+| `VIDM` | `VIDM` | ✅ |
+| `LV` | `LV` | ✅ |
+| `ID` | `ID` | ✅ |
+| `CV` | `CV` | ✅ |
+| `MI` | `MI` | ✅ |
+| `DI` | `DI` | ✅ |
+| `LIC` | `LIC` | ✅ |
+| `CD` | `CD` | ✅ |
+| `DVD` | `DVD` | ✅ |
+| `VID Muitas pārvalde` | `VID Muitas pārvalde` | ✅ |
+| `LV rullē` | `LV rullē` | ✅ |
+
 ## Roman
 
 | Input | Expected | Result |
@@ -92,6 +109,10 @@ Auto-generated after each `pytest` run. Shows every parametrised case with its l
 | `XIX gs.` | `deviņpadsmitais gadsimts` | ✅ |
 | `XXI gs.` | `divdesmit pirmais gadsimts` | ✅ |
 | `XX gadsimtā` | `divdesmitajā gadsimtā` | ✅ |
+| `IV sējums` | `ceturtais sējums` | ✅ |
+| `III daļa` | `trešā daļa` | ✅ |
+| `V pants` | `piektais pants` | ✅ |
+| `X klasē` | `desmitajā klasē` | ✅ |
 
 ## Fractions
 
@@ -133,6 +154,7 @@ Auto-generated after each `pytest` run. Shows every parametrised case with its l
 | Input | Expected | Result |
 |-------|----------|--------|
 | `mežiem.` | `mežiem.` | ✅ |
+| `koks aug.` | `koks aug.` | ✅ |
 | `koeficientiem.` | `koeficientiem.` | ✅ |
 | `cilvēkiem.` | `cilvēkiem.` | ✅ |
 | `un tad vēl.` | `un tad vēl.` | ✅ |

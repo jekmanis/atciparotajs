@@ -130,6 +130,29 @@ ROMAN_CASES = [
     ("XIX gs.",             "deviņpadsmitais gadsimts"),    # 19th century
     ("XXI gs.",             "divdesmit pirmais gadsimts"),  # 21st century
     ("XX gadsimtā",         "divdesmitajā gadsimtā"),       # loc sg (in the 20th century)
+    ("IV sējums",           "ceturtais sējums"),            # nom masc sg
+    ("III daļa",            "trešā daļa"),                  # nom fem sg
+    ("V pants",             "piektais pants"),              # nom masc sg
+    ("X klasē",             "desmitajā klasē"),             # loc fem sg
+]
+
+# ============================================================
+# Lielo burtu saīsinājumi (uppercase acronyms) — must NOT be read
+# as Roman numerals when no context word follows
+# ============================================================
+ACRONYM_NOT_ROMAN_CASES = [
+    ("VID",                  "VID"),
+    ("VIDM",                 "VIDM"),
+    ("LV",                   "LV"),
+    ("ID",                   "ID"),
+    ("CV",                   "CV"),
+    ("MI",                   "MI"),
+    ("DI",                   "DI"),
+    ("LIC",                  "LIC"),
+    ("CD",                   "CD"),
+    ("DVD",                  "DVD"),
+    ("VID Muitas pārvalde",  "VID Muitas pārvalde"),
+    ("LV rullē",             "LV rullē"),
 ]
 
 # ============================================================
@@ -653,6 +676,11 @@ def test_cardinals(text, expected):
 
 @pytest.mark.parametrize("text,expected", ORDINAL_CASES)
 def test_ordinals(text, expected):
+    assert convert(text) == expected
+
+
+@pytest.mark.parametrize("text,expected", ACRONYM_NOT_ROMAN_CASES)
+def test_acronym_not_roman(text, expected):
     assert convert(text) == expected
 
 

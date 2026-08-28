@@ -98,6 +98,17 @@ _PCT_PREPS = {
 # For n=1 (singular), some prepositions require accusative sg (bucket 6) rather than gen sg (bucket 2)
 _PCT_PREPS_ONE = {"par": 6}
 
+# Context words that license reading an uppercase letter sequence as a Roman
+# numeral. Without one, acronyms ("VID", "LV", "CV", "MI") stay untouched.
+_ROMAN_CONTEXT = re.compile(
+    r'^[\s]*(?:'
+    r'gadsimt|gadu|gadsimtu|tūkstošgad'
+    r'|nodaļ|apakšnodaļ|sadaļ|daļ|sējum|pant|punkt|pielikum|nodalījum'
+    r'|pasaul|kārt|posm|grup|klas|sērij|sezon|izdevum|grāmat|tabul|attēl'
+    r'|kongres|koncert|simfonij|olimpiād'
+    r')', re.IGNORECASE
+)
+
 # Single word preceding a Roman-numeral candidate (to detect surname initials)
 _WORD_BEFORE = re.compile(r'\w+\s+$')
 # Capital-letter word following a dot+space — indicates a surname after an initial
@@ -487,28 +498,18 @@ def convert(text: str, expand_abbr: bool = True, no_roman: bool = False) -> str:
             return fraction(int(m.group(1)), m.group(2), bucket)
         elif m.group(3) is not None:  # arabic ordinal
             return ordinal(int(m.group(3)), bucket)
-        elif m.group(4) is not None:  # roman ordinal
+        elif m.group(4) is not None or m.group(5) is not None:  # roman ordinal/cardinal
             if no_roman:
                 return m.group(0)
-            s = m.group(4)
+            s = m.group(4) if m.group(4) is not None else m.group(5)
             # Single uppercase letter before/after a capitalized word is likely a name initial
             if len(s) == 1 and (
                 _WORD_BEFORE.search(text[:m.start()])
                 or _CAP_WORD_AFTER.match(text[m.end():])
             ):
                 return m.group(0)
-            if is_valid_roman(s):
-                return ordinal(roman_to_int(s), bucket)
-            return m.group(0)
-        elif m.group(5) is not None:  # roman cardinal
-            if no_roman:
-                return m.group(0)
-            s = m.group(5)
-            # Single uppercase letter before/after a capitalized word is likely a name initial
-            if len(s) == 1 and (
-                _WORD_BEFORE.search(text[:m.start()])
-                or _CAP_WORD_AFTER.match(text[m.end():])
-            ):
+            # Only read as a Roman numeral when a context word follows
+            if not _ROMAN_CONTEXT.match(text[m.end():]):
                 return m.group(0)
             if is_valid_roman(s):
                 return ordinal(roman_to_int(s), bucket)
