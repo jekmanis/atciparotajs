@@ -126,6 +126,7 @@ ORDINAL_CASES = [
 ROMAN_CASES = [
     ("II pasaules karš",    "otrais pasaules karš"),        # nom masc sg
     ("XIV gs.",             "četrpadsmitais gadsimts"),     # nom masc sg + abbreviation
+    ("pārvaldes V nodaļa",  "pārvaldes piektā nodaļa"),               # nom fem sg
     ("V nodaļa",            "piektā nodaļa"),               # nom fem sg
     ("XIX gs.",             "deviņpadsmitais gadsimts"),    # 19th century
     ("XXI gs.",             "divdesmit pirmais gadsimts"),  # 21st century

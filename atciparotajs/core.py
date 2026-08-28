@@ -498,14 +498,14 @@ def convert(text: str, expand_abbr: bool = True, no_roman: bool = False) -> str:
             if no_roman:
                 return m.group(0)
             s = m.group(4) if m.group(4) is not None else m.group(5)
-            # Single uppercase letter before/after a capitalized word is likely a name initial
-            if len(s) == 1 and (
-                _WORD_BEFORE.search(text[:m.start()])
-                or _CAP_WORD_AFTER.match(text[m.end():])
-            ):
-                return m.group(0)
+            after = text[m.end():]
             # Only read as a Roman numeral when a context word follows
-            if not _ROMAN_CONTEXT.match(text[m.end():]):
+            if not _ROMAN_CONTEXT.match(after):
+                return m.group(0)
+            # Single uppercase letter followed by a capitalized word is likely
+            # a name initial ("Jānis V. Grupa"); a lowercase context word
+            # ("pārvaldes V nodaļa") outweighs that heuristic.
+            if len(s) == 1 and _CAP_WORD_AFTER.match(after):
                 return m.group(0)
             if is_valid_roman(s):
                 return ordinal(roman_to_int(s), bucket)

@@ -105,6 +105,7 @@ Auto-generated after each `pytest` run. Shows every parametrised case with its l
 |-------|----------|--------|
 | `II pasaules karš` | `otrais pasaules karš` | ✅ |
 | `XIV gs.` | `četrpadsmitais gadsimts` | ✅ |
+| `pārvaldes V nodaļa` | `pārvaldes piektā nodaļa` | ✅ |
 | `V nodaļa` | `piektā nodaļa` | ✅ |
 | `XIX gs.` | `deviņpadsmitais gadsimts` | ✅ |
 | `XXI gs.` | `divdesmit pirmais gadsimts` | ✅ |
