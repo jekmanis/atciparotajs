@@ -7,7 +7,7 @@ name = "atciparotajs"
 version = "0.1.4"
 description = "Latvian number-to-words converter for TTS preprocessing"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 
 [project.scripts]
 atciparotajs = "atciparotajs.__main__:main"
