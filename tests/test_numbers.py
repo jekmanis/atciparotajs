@@ -169,6 +169,41 @@ FRACTION_CASES = [
 ]
 
 # ============================================================
+# Decimāldaļas sākuma nulles (leading zeros in the decimal part)
+# ============================================================
+DECIMAL_LEADING_ZERO_CASES = [
+    ("1237,06 vienības", "tūkstoš divsimt trīsdesmit septiņas komats nulle sešas vienības"),
+    ("1237,6 vienības",  "tūkstoš divsimt trīsdesmit septiņas komats sešas vienības"),
+    ("1237,60 vienības", "tūkstoš divsimt trīsdesmit septiņas komats sešdesmit vienības"),
+    ("10,01 punkti",     "desmit komats nulle vieni punkti"),
+    ("10,01 punkts",     "desmit komats nulle vieni punkts"),
+    ("0,05",         "nulle komats nulle pieci"),
+    ("0,5",          "nulle komats pieci"),
+    ("2,003 kg",     "divi komats nulle nulle trīs kilogrami"),
+    ("0,001 g",      "nulle komats nulle nulle viens grams"),
+    ("1,00 kg",      "viens komats nulle nulle kilogramu"),
+    ("0,05%",        "nulle komats nulle pieci procenti"),
+]
+
+# ============================================================
+# Decimāli ar mērvienību saīsinājumiem (decimal amounts + unit abbreviations)
+# ============================================================
+DECIMAL_UNIT_CASES = [
+    ("2,5 kg",     "divi komats pieci kilogrami"),
+    ("1,5 km",     "viens komats pieci kilometri"),
+    ("1,1 kg",     "viens komats viens kilograms"),
+    ("2,10 kg",    "divi komats desmit kilogramu"),
+    ("2,5 m²",     "divi komats pieci kvadrātmetri"),
+    ("1,5 km/h",   "viens komats pieci kilometri stundā"),
+    ("12,5 lpp.",  "divpadsmit komats piecas lappuses"),
+    ("1,5 T",      "viena komats piecas tonnas"),
+    ("2,1 T",      "divas komats viena tonna"),
+    ("36,6°C",     "trīsdesmit seši komats seši grādi"),
+    ("21,1°C",     "divdesmit viens komats viens grāds"),
+    ("2,5 kg maisā", "divi komats pieci kilogrami maisā"),
+]
+
+# ============================================================
 # Saīsinājumi (abbreviations)
 # ============================================================
 ABBREVIATION_CASES = [
@@ -294,6 +329,8 @@ LARGE_NUMBER_CASES = [
     ("1000 cilvēku",        "tūkstoš cilvēku"),
     ("3000 gadu",           "trīstūkstoš gadu"),
     ("5000 gadus",          "piectūkstoš gadus"),
+    ("6000 gadu",           "seštūkstoš gadu"),
+    ("6420 cilvēku",        "seštūkstoš četrsimt divdesmit cilvēku"),
     ("10000 cilvēku",       "desmit tūkstoši cilvēku"),
     ("10 000 cilvēku",      "desmit tūkstoši cilvēku"),
     ("150 000 karavīru",    "simt piecdesmit tūkstoši karavīru"),
@@ -546,6 +583,26 @@ CURRENCY_CONVERT_CASES = [
     # Embedded in sentence
     ("Prece maksā 2,50 EUR.", "Prece maksā divus eiro un piecdesmit centu."),
     ("Salāti maksā 1.83EUR", "Salāti maksā vienu eiro un astoņdesmit trīs centus"),
+    # More decimals than a currency has — read as a plain decimal, not as cents
+    ("2,003 eiro",      "divi komats nulle nulle trīs eiro"),
+]
+
+# ============================================================
+# Valūta ar vārdu "eiro"/"euro" (spelled-out currency name as trigger)
+# ============================================================
+CURRENCY_WORD_CASES = [
+    ("1237,06 eiro", "tūkstoš divsimt trīsdesmit septiņi eiro un seši centi"),
+    ("1237,6 eiro",  "tūkstoš divsimt trīsdesmit septiņi eiro un sešdesmit centu"),
+    ("1237,60 eiro", "tūkstoš divsimt trīsdesmit septiņi eiro un sešdesmit centu"),
+    ("10,01 eiro",   "desmit eiro un viens cents"),
+    ("1 eiro",       "viens eiro"),
+    ("5 eiro",       "pieci eiro"),
+    ("11 eiro",      "vienpadsmit eiro"),
+    ("2,50 euro",    "divi eiro un piecdesmit centu"),
+    ("1,82 EURO",    "viens eiro un astoņdesmit divi centi"),
+    ("Prece maksā 2,50 eiro.", "Prece maksā divus eiro un piecdesmit centu."),
+    # No amount — the word is left alone
+    ("eiro kurss",   "eiro kurss"),
 ]
 
 
@@ -873,4 +930,19 @@ def test_episode_notation(text, expected):
 
 @pytest.mark.parametrize("text,expected", ACADEMIC_YEAR_CASES)
 def test_academic_year(text, expected):
+    assert convert(text) == expected
+
+
+@pytest.mark.parametrize("text,expected", DECIMAL_LEADING_ZERO_CASES)
+def test_decimal_leading_zeros(text, expected):
+    assert convert(text) == expected
+
+
+@pytest.mark.parametrize("text,expected", DECIMAL_UNIT_CASES)
+def test_decimal_units(text, expected):
+    assert convert(text) == expected
+
+
+@pytest.mark.parametrize("text,expected", CURRENCY_WORD_CASES)
+def test_currency_word(text, expected):
     assert convert(text) == expected

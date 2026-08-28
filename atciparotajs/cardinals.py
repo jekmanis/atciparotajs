@@ -36,7 +36,7 @@ _THOU_COMPOUND = {
     3: "trīstūkstoš",
     4: "četrtūkstoš",
     5: "piectūkstoš",
-    6: "sešttūkstoš",
+    6: "seštūkstoš",
     7: "septiņtūkstoš",
     8: "astoņtūkstoš",
     9: "deviņtūkstoš",

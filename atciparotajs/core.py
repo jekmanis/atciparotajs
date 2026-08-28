@@ -22,6 +22,9 @@ PATTERN = re.compile(
 
 LAT_WORD = re.compile(r'[A-Za-zĀāČčĒēĢģĪīĶķĻļŅņŌōŖŗŠšŪūŽžāēīūčšžģķļņŗ]+')
 
+# Counted amounts may be decimal ("2,5 kg"); the decimal part must not be split off
+_DEC_NUM = r'(\d+(?:[.,]\d+)?)'
+
 # Clock time "H:MM" must be expanded before the general pattern sees the digits
 _TIME_PAT = re.compile(r'\b(\d{1,2}):(\d{2})\b')
 
@@ -44,7 +47,7 @@ _PCT_RANGE_PAT = re.compile(r'\b(\d+(?:[.,]\d+)?)[–\-—](\d+(?:[.,]\d+)?)\s*%
 _SPACE_THOU_PAT = re.compile(r'\b(\d{1,3}(?:[  ]\d{3})+)\b')
 
 # Matches "N lpp." to handle noun inflection together with the number
-_LPP_PAT = re.compile(r'(\d+)\s+lpp\.')
+_LPP_PAT = re.compile(rf'{_DEC_NUM}\s+lpp\.')
 
 # Unit abbreviations that must be inflected based on the preceding number
 _UNIT_MAP = {
@@ -64,7 +67,7 @@ _UNIT_MAP = {
     "g.":  ("grams",      "grami",      "gramu"),
 }
 _UNIT_ABBR_RE = "|".join(re.escape(k) for k in sorted(_UNIT_MAP, key=len, reverse=True))
-_UNIT_PAT = re.compile(rf'(\d+)\s+({_UNIT_ABBR_RE})(?=\s|$|[,.])')
+_UNIT_PAT = re.compile(rf'{_DEC_NUM}\s+({_UNIT_ABBR_RE})(?=\s|$|[,.])')
 
 # Superscript units: km², m², m³, km³
 _SUPER_UNIT_MAP = {
@@ -74,7 +77,7 @@ _SUPER_UNIT_MAP = {
     "m³":  ("kubikmetrs",       "kubikmetri",       "kubikmetru"),
 }
 _SUPER_ABBR_RE = "|".join(re.escape(k) for k in sorted(_SUPER_UNIT_MAP, key=len, reverse=True))
-_SUPER_PAT = re.compile(rf'(\d+)\s+({_SUPER_ABBR_RE})(?=\s|$|[,.])')
+_SUPER_PAT = re.compile(rf'{_DEC_NUM}\s+({_SUPER_ABBR_RE})(?=\s|$|[,.])')
 
 # Negative numbers: "-N" at word boundary, not preceded by a digit (avoid ranges like "5-6")
 _NEG_PAT = re.compile(r'(?<!\d)-(\d+(?:[.,]\d+)?)')
@@ -116,10 +119,10 @@ _CAP_WORD_AFTER = re.compile(r'^\s+[A-ZĀČĒĢĪĶĻŅŠŪŽ]')
 
 # Currency patterns — amount with symbol or ISO code
 # Tonne: "53T" or "53 T" → "piecdesmit trīs tonnas" (feminine)
-_TONNE_PAT = re.compile(r'(\d+)\s*T(?=\s|$|[,.])')
+_TONNE_PAT = re.compile(rf'{_DEC_NUM}\s*T(?=\s|$|[,.])')
 
 # Temperature: "36°C", "100°F", "90°"
-_TEMP_PAT = re.compile(r'(\d+)°[CF]?(?=\s|$|[,.])')
+_TEMP_PAT = re.compile(rf'{_DEC_NUM}°[CF]?(?=\s|$|[,.])')
 
 # Vulgar fractions: "3/4", "1/2"; mixed: "2 1/4"
 _FRACTION_DENOM = {
@@ -141,7 +144,7 @@ _SIMPLE_FRAC_PAT = re.compile(r'(\d+)/(\d+)')
 _CLASS_PAT = re.compile(r'(\d+)\.([A-Za-z])\s+((?:klase|klaš)\w*)', re.IGNORECASE)
 
 # Speed: "100 km/h"
-_SPEED_PAT = re.compile(r'(\d+)\s*km/h(?=\s|$|[,.])')
+_SPEED_PAT = re.compile(rf'{_DEC_NUM}\s*km/h(?=\s|$|[,.])')
 
 # Age-gate label: "18+" → "astoņpadsmit plus"
 _AGE_GATE_PAT = re.compile(r'\b(\d+)\+')
@@ -157,7 +160,8 @@ _ACAD_YEAR_PAT = re.compile(r'(\d+)\./(\d+)\.(?=\s|$|[,])')
 
 _CURRENCY_SYMBOL_MAP = {'€': 'EUR', '$': 'USD', '£': 'GBP'}
 _CUR_CODES_RE = '|'.join(re.escape(c) for c in sorted(CURRENCY_FORMS, key=len, reverse=True))
-_CUR_AMT = r'(\d+)(?:[,.](\d{1,2}))?'
+# The lookbehind keeps the pattern off the decimal part of a longer number ("2,003 EUR")
+_CUR_AMT = r'(?<![\d,.])(\d+)(?:[,.](\d{1,2}))?'
 # Symbol before: €1,82 or € 1,82
 _CUR_SYM_BEFORE = re.compile(r'([€$£])\s*' + _CUR_AMT)
 # Symbol after: 1,82€ or 1,82 €
@@ -166,6 +170,10 @@ _CUR_SYM_AFTER = re.compile(_CUR_AMT + r'\s*([€$£])')
 _CUR_CODE_BEFORE = re.compile(r'\b(' + _CUR_CODES_RE + r')\s+' + _CUR_AMT, re.IGNORECASE)
 # Code after: 1,82 EUR  or  1.82EUR (no space)
 _CUR_CODE_AFTER = re.compile(_CUR_AMT + r'\s*(' + _CUR_CODES_RE + r')\b', re.IGNORECASE)
+# Spelled-out currency names: "1237,06 eiro" — so cents are read as cents, not as a decimal
+_CUR_WORD_MAP = {'eiro': 'EUR', 'euro': 'EUR'}
+_CUR_WORDS_RE = '|'.join(sorted(_CUR_WORD_MAP, key=len, reverse=True))
+_CUR_WORD_AFTER = re.compile(_CUR_AMT + r'\s+(' + _CUR_WORDS_RE + r')\b', re.IGNORECASE)
 
 
 def _parse_cur_amount(int_str: str, dec_str: str | None) -> tuple[int, int]:
@@ -184,57 +192,54 @@ def _expand_cur(major: int, minor: int, code: str, prev: str | None = None) -> s
     return _currency((major, minor), code.upper(), accusative=accusative)
 
 
-def _expand_super_unit(m: re.Match) -> str:
-    n = int(m.group(1))
-    nom_sg, nom_pl, gen_pl = _SUPER_UNIT_MAP[m.group(2)]
-    last2 = n % 100
-    last1 = n % 10
-    if 10 <= last2 <= 19 or last1 == 0:
-        noun, bucket = gen_pl, 6
-    elif last1 == 1:
-        noun, bucket = nom_sg, 1
-    else:
-        noun, bucket = nom_pl, 8
-    return f"{cardinal(n, bucket)} {noun}"
+def _split_amount(raw: str) -> tuple[str, str | None]:
+    """Split a possibly decimal amount into its integer and decimal parts."""
+    for sep in (',', '.'):
+        if sep in raw:
+            int_part, dec_part = raw.split(sep, 1)
+            return int_part, dec_part
+    return raw, None
 
 
-def _expand_unit(m: re.Match) -> str:
-    n = int(m.group(1))
-    nom_sg, nom_pl, gen_pl = _UNIT_MAP[m.group(2)]
-    last2 = n % 100
-    last1 = n % 10
-    if 10 <= last2 <= 19 or last1 == 0:
-        noun, bucket = gen_pl, 6
-    elif last1 == 1:
-        noun, bucket = nom_sg, 1
-    else:
-        noun, bucket = nom_pl, 8
-    return f"{cardinal(n, bucket)} {noun}"
+def _counted(raw: str, forms: tuple[str, str, str], feminine: bool = False) -> str:
+    """Spell a possibly decimal amount together with its noun.
 
-
-def _expand_speed(m: re.Match) -> str:
-    n = int(m.group(1))
-    last2 = n % 100
-    last1 = n % 10
-    if 10 <= last2 <= 19 or last1 == 0:
-        noun, bucket = "kilometru", 6
-    elif last1 == 1:
-        noun, bucket = "kilometrs", 1
-    else:
-        noun, bucket = "kilometri", 8
-    return f"{cardinal(n, bucket)} {noun} stundā"
-
-
-def _expand_lpp(m: re.Match) -> str:
-    n = int(m.group(1))
+    The noun agrees with the last number spoken, so "2,5 kg" reads
+    "divi komats pieci kilogrami" (five kilograms), not "two kilograms".
+    """
+    nom_sg, nom_pl, gen_pl = forms
+    sg_bucket, pl_bucket = (2, 3) if feminine else (1, 8)
+    int_part, dec_part = _split_amount(raw)
+    n = int(dec_part) if dec_part is not None else int(raw)
     last2 = n % 100
     last1 = n % 10
     if last1 == 1 and last2 != 11:
-        return f"{cardinal(n, 2)} lappuse"
+        noun, bucket = nom_sg, sg_bucket
     elif 2 <= last1 <= 9 and not (10 <= last2 <= 19):
-        return f"{cardinal(n, 3)} lappuses"
+        noun, bucket = nom_pl, pl_bucket
     else:
-        return f"{cardinal(n, 6)} lappušu"
+        noun, bucket = gen_pl, 6
+    if dec_part is None:
+        return f"{cardinal(n, bucket)} {noun}"
+    # The integer part stays nominative even when the noun is genitive plural
+    int_bucket = 2 if feminine else 1
+    return f"{fraction(int(int_part), dec_part, bucket, int_bucket=int_bucket)} {noun}"
+
+
+def _expand_super_unit(m: re.Match) -> str:
+    return _counted(m.group(1), _SUPER_UNIT_MAP[m.group(2)])
+
+
+def _expand_unit(m: re.Match) -> str:
+    return _counted(m.group(1), _UNIT_MAP[m.group(2)])
+
+
+def _expand_speed(m: re.Match) -> str:
+    return _counted(m.group(1), ("kilometrs", "kilometri", "kilometru")) + " stundā"
+
+
+def _expand_lpp(m: re.Match) -> str:
+    return _counted(m.group(1), ("lappuse", "lappuses", "lappušu"), feminine=True)
 
 
 def _prev_word(text: str, start: int) -> str | None:
@@ -247,26 +252,21 @@ def _prev_word(text: str, start: int) -> str | None:
 
 
 def _expand_temp(m: re.Match) -> str:
-    n = int(m.group(1))
-    if n == 0:
+    # Temperatures read colloquially: "divdesmit grādi", not "divdesmit grādu"
+    int_part, dec_part = _split_amount(m.group(1))
+    n = int(dec_part) if dec_part is not None else int(m.group(1))
+    if dec_part is None and n == 0:
         return "nulle grādu"
     last2 = n % 100
     last1 = n % 10
-    if last1 == 1 and last2 != 11:
-        return f"{cardinal(n, 1)} grāds"
-    return f"{cardinal(n, 8)} grādi"
+    noun, bucket = ("grāds", 1) if last1 == 1 and last2 != 11 else ("grādi", 8)
+    if dec_part is None:
+        return f"{cardinal(n, bucket)} {noun}"
+    return f"{fraction(int(int_part), dec_part, bucket, int_bucket=1)} {noun}"
 
 
 def _expand_tonne(m: re.Match) -> str:
-    n = int(m.group(1))
-    last2 = n % 100
-    last1 = n % 10
-    if last1 == 1 and last2 != 11:
-        return f"{cardinal(n, 2)} tonna"
-    elif 2 <= last1 <= 9 and not (10 <= last2 <= 19):
-        return f"{cardinal(n, 3)} tonnas"
-    else:
-        return f"{cardinal(n, 6)} tonnu"
+    return _counted(m.group(1), ("tonna", "tonnas", "tonnu"), feminine=True)
 
 
 def _expand_vulgar_fraction(num: int, denom: int) -> str:
@@ -462,6 +462,10 @@ def convert(text: str, expand_abbr: bool = True, no_roman: bool = False) -> str:
     text = _CUR_SYM_AFTER.sub(
         lambda m: _expand_cur(*_parse_cur_amount(m.group(1), m.group(2)),
                               _CURRENCY_SYMBOL_MAP[m.group(3)],
+                              _prev_word(text, m.start())), text)
+    text = _CUR_WORD_AFTER.sub(
+        lambda m: _expand_cur(*_parse_cur_amount(m.group(1), m.group(2)),
+                              _CUR_WORD_MAP[m.group(3).lower()],
                               _prev_word(text, m.start())), text)
 
     # Phone numbers must expand before abbreviations to prevent "tel." → "litrs"
