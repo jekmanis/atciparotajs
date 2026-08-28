@@ -128,6 +128,19 @@ Auto-generated after each `pytest` run. Shows every parametrised case with its l
 | `10 cm` | `desmit centimetru` | ✅ |
 | `10 mm` | `desmit milimetru` | ✅ |
 
+## Non Abbreviations
+
+| Input | Expected | Result |
+|-------|----------|--------|
+| `mežiem.` | `mežiem.` | ✅ |
+| `koeficientiem.` | `koeficientiem.` | ✅ |
+| `cilvēkiem.` | `cilvēkiem.` | ✅ |
+| `un tad vēl.` | `un tad vēl.` | ✅ |
+| `liels ceļojums.` | `liels ceļojums.` | ✅ |
+| `viņi devās mājup.` | `viņi devās mājup.` | ✅ |
+| `tas notika rudenī.` | `tas notika rudenī.` | ✅ |
+| `labs darbs, kolēģi.` | `labs darbs, kolēģi.` | ✅ |
+
 ## Dates
 
 | Input | Expected | Result |

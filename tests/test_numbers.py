@@ -170,6 +170,21 @@ ABBREVIATION_CASES = [
 ]
 
 # ============================================================
+# Vārdi, kas nav saīsinājumi (words that must not be treated as abbreviations)
+# ============================================================
+NON_ABBREVIATION_CASES = [
+    ("mežiem.",             "mežiem."),
+    ("koks aug.",           "koks aug."),
+    ("koeficientiem.",      "koeficientiem."),
+    ("cilvēkiem.",          "cilvēkiem."),
+    ("un tad vēl.",         "un tad vēl."),
+    ("liels ceļojums.",     "liels ceļojums."),
+    ("viņi devās mājup.",   "viņi devās mājup."),
+    ("tas notika rudenī.",  "tas notika rudenī."),
+    ("labs darbs, kolēģi.", "labs darbs, kolēģi."),
+]
+
+# ============================================================
 # Datumi (dates)
 # ============================================================
 DATE_CASES = [
@@ -653,6 +668,11 @@ def test_fractions(text, expected):
 
 @pytest.mark.parametrize("text,expected", ABBREVIATION_CASES)
 def test_abbreviations(text, expected):
+    assert convert(text) == expected
+
+
+@pytest.mark.parametrize("text,expected", NON_ABBREVIATION_CASES)
+def test_non_abbreviations(text, expected):
     assert convert(text) == expected
 
 

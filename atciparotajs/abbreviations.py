@@ -1,3 +1,5 @@
+import re
+
 ABBREVIATIONS = {
     "gs.":    "gadsimts",
     "g.":     "gads",
@@ -18,8 +20,17 @@ ABBREVIATIONS = {
     "p.Kr.":  "pēc Kristus",
 }
 
+# A letter in any alphabet (unicode-aware, excludes digits and underscore)
+_LETTER = r"[^\W\d_]"
+
+# An abbreviation only counts when it is not glued to surrounding letters:
+# "mežiem." must not match "m.", and "g.a" must not match "g.".
+_ABBR_RE = re.compile(
+    r"(?<!" + _LETTER + r")(?:"
+    + "|".join(re.escape(a) for a in sorted(ABBREVIATIONS, key=len, reverse=True))
+    + r")(?!" + _LETTER + r")"
+)
+
 
 def expand_abbreviations(text: str) -> str:
-    for abbr in sorted(ABBREVIATIONS, key=len, reverse=True):
-        text = text.replace(abbr, ABBREVIATIONS[abbr])
-    return text
+    return _ABBR_RE.sub(lambda m: ABBREVIATIONS[m.group(0)], text)
