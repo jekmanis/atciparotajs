@@ -33,6 +33,9 @@ convert("21,5 grami")        # → "divdesmit viens komats pieci grami"
 
 # Disable abbreviation expansion
 convert("14. gs.", expand_abbr=False)  # → "četrpadsmitais gs."
+
+# Disable Roman numeral expansion
+convert("XIV gs.", no_roman=True)      # → "XIV gadsimts"
 ```
 
 ### Command line
@@ -46,6 +49,9 @@ echo "2 draugiem" | atciparotajs
 
 # Disable abbreviation expansion
 atciparotajs --no-expand-abbr "14. gs."
+
+# Disable Roman numeral expansion
+atciparotajs --no-roman "XIV gs."
 ```
 
 ### Phone numbers
