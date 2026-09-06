@@ -383,6 +383,29 @@ RANGE_CASES = [
 ]
 
 # ============================================================
+# Diapazoni ar mērvienību saīsinājumiem (ranges + unit abbreviations)
+# ============================================================
+# The noun agrees with the last number; both numbers take its case.
+UNIT_RANGE_CASES = [
+    ("0–2 mm",      "nulle līdz divi milimetri"),
+    ("0-2 mm",      "nulle līdz divi milimetri"),      # plain hyphen
+    ("0 – 2 mm",    "nulle līdz divi milimetri"),      # spaced dash
+    ("0…2 mm",      "nulle līdz divi milimetri"),      # ellipsis character
+    ("0...2 mm",    "nulle līdz divi milimetri"),      # three dots
+    ("0–1,5 mm",    "nulle līdz viens komats pieci milimetri"),
+    ("1,5–3 mm",    "viens komats pieci līdz trīs milimetri"),
+    ("10–15 mm",    "desmit līdz piecpadsmit milimetru"),
+    ("20–21 mm",    "divdesmit līdz divdesmit viens milimetrs"),
+    ("3–5 km",      "trīs līdz pieci kilometri"),
+    ("10–20 cm",    "desmit līdz divdesmit centimetru"),
+    ("Sestdien: pārsvarā sauss, 0–2 mm; vējš 3–5 m/s.",
+     "Sestdien: pārsvarā sauss, nulle līdz divi milimetri; vējš trīs līdz pieci metri sekundē."),
+    # ranges without a unit abbreviation must stay untouched
+    ("5–10 cilvēki",   "pieci līdz desmit cilvēki"),
+    ("5–10%",          "piecus līdz desmit procentus"),
+]
+
+# ============================================================
 # Telefona numuri (phone numbers)
 # ============================================================
 PHONE_CASES = [
@@ -719,7 +742,7 @@ PERCENTAGE_PREPOSITION_CASES = [
 ]
 
 # ============================================================
-# Ātrums (speed — km/h)
+# Ātrums (speed — km/h, m/s)
 # ============================================================
 SPEED_CASES = [
     ("1 km/h",    "viens kilometrs stundā"),
@@ -727,6 +750,15 @@ SPEED_CASES = [
     ("11 km/h",   "vienpadsmit kilometru stundā"),
     ("21 km/h",   "divdesmit viens kilometrs stundā"),
     ("100 km/h",  "simts kilometru stundā"),
+    ("80–100 km/h", "astoņdesmit līdz simts kilometru stundā"),
+    ("1 m/s",     "viens metrs sekundē"),
+    ("5 m/s",     "pieci metri sekundē"),
+    ("10 m/s",    "desmit metru sekundē"),
+    ("21 m/s",    "divdesmit viens metrs sekundē"),
+    ("2,5 m/s",   "divi komats pieci metri sekundē"),
+    ("5–8 m/s",   "pieci līdz astoņi metri sekundē"),
+    ("vējš 5–8 m/s, brāzmās 15 m/s",
+     "vējš pieci līdz astoņi metri sekundē, brāzmās piecpadsmit metru sekundē"),
 ]
 
 # ============================================================
@@ -856,6 +888,11 @@ def test_scores(text, expected):
 
 @pytest.mark.parametrize("text,expected", RANGE_CASES)
 def test_ranges(text, expected):
+    assert convert(text) == expected
+
+
+@pytest.mark.parametrize("text,expected", UNIT_RANGE_CASES)
+def test_unit_ranges(text, expected):
     assert convert(text) == expected
 
 
