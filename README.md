@@ -11,6 +11,7 @@ Numbers are inflected to agree in gender and grammatical case with the following
 - **Roman numerals** — `XIV gs.` → `četrpadsmitais gadsimts`
 - **Decimals/fractions** — `21,5 grami` → `divdesmit viens komats pieci grami`
 - **Currency** — `1237,06 EUR` and `1237,06 €` → `tūkstoš divsimt trīsdesmit septiņi eiro un seši centi`
+- **Temperature** — `+14…+15 °C` → `plus četrpadsmit līdz plus piecpadsmit grādi`
 - **Abbreviation expansion** — `gs.` → `gadsimts`, `km.` → `kilometrs`, and more
 - **Phone numbers** — spelled out digit by digit `{phone:67030638}` → `seši septiņi nulle trīs nulle seši trīs astoņi`
 

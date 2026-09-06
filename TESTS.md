@@ -432,6 +432,41 @@ Auto-generated after each `pytest` run. Shows every parametrised case with its l
 | `11°C` | `vienpadsmit grādi` | ✅ |
 | `0°` | `nulle grādu` | ✅ |
 | `2°` | `divi grādi` | ✅ |
+| `21 °C` | `divdesmit viens grāds` | ✅ |
+| `-5 °C` | `mīnus pieci grādi` | ✅ |
+| `-5°C` | `mīnus pieci grādi` | ✅ |
+| `-1°C` | `mīnus viens grāds` | ✅ |
+| `0°C` | `nulle grādu` | ✅ |
+| `+21°C` | `plus divdesmit viens grāds` | ✅ |
+| `+21 °C` | `plus divdesmit viens grāds` | ✅ |
+| `+1°C` | `plus viens grāds` | ✅ |
+| `14…15°C` | `četrpadsmit līdz piecpadsmit grādi` | ✅ |
+| `14…15 °C` | `četrpadsmit līdz piecpadsmit grādi` | ✅ |
+| `14...15 °C` | `četrpadsmit līdz piecpadsmit grādi` | ✅ |
+| `14–15°C` | `četrpadsmit līdz piecpadsmit grādi` | ✅ |
+| `14-15 °C` | `četrpadsmit līdz piecpadsmit grādi` | ✅ |
+| `14 – 15 °C` | `četrpadsmit līdz piecpadsmit grādi` | ✅ |
+| `20…21°` | `divdesmit līdz divdesmit viens grāds` | ✅ |
+| `-5…-3°C` | `mīnus pieci līdz mīnus trīs grādi` | ✅ |
+| `-5…+3 °C` | `mīnus pieci līdz plus trīs grādi` | ✅ |
+| `-5…0°C` | `mīnus pieci līdz nulle grādu` | ✅ |
+| `-2…0 °C` | `mīnus divi līdz nulle grādu` | ✅ |
+| `0…+3°C` | `nulle līdz plus trīs grādi` | ✅ |
+| `-3…+1 °C` | `mīnus trīs līdz plus viens grāds` | ✅ |
+| `+5 grādi` | `plus pieci grādi` | ✅ |
+| `-5 grādi` | `mīnus pieci grādi` | ✅ |
+| `14–15 grādi` | `četrpadsmit līdz piecpadsmit grādi` | ✅ |
+| `+14…+15 grādi` | `plus četrpadsmit līdz plus piecpadsmit grādi` | ✅ |
+| `-1…0 grādi` | `mīnus viens līdz nulle grādi` | ✅ |
+| `21 grādi` | `divdesmit viens grādi` | ✅ |
+| `+21 grādi` | `plus divdesmit viens grādi` | ✅ |
+| `-1 grāds` | `mīnus viens grāds` | ✅ |
+| `20…21 grādi` | `divdesmit līdz divdesmit viens grādi` | ✅ |
+| `+21…+22 grādos` | `plus divdesmit vienā līdz plus divdesmit divos grādos` | ✅ |
+| `36,6°C` | `trīsdesmit seši komats seši grādi` | ✅ |
+| `21,1°C` | `divdesmit viens komats viens grāds` | ✅ |
+| `Ceturtdien: +14…+15 °C` | `Ceturtdien: plus četrpadsmit līdz plus piecpadsmit grādi` | ✅ |
+| `naktī +9…+10 °C, dienā +18…+19 °C` | `naktī plus deviņi līdz plus desmit grādi, dienā plus astoņpadsmit līdz plus deviņpadsmit grādi` | ✅ |
 
 ## Tonnes
 
