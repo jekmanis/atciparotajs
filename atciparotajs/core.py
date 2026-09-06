@@ -7,7 +7,7 @@ from atciparotajs.ordinals import ordinal
 from atciparotajs.fractions import fraction
 from atciparotajs.roman import roman_to_int, is_valid_roman
 from atciparotajs.abbreviations import expand_abbreviations
-from atciparotajs.time import clock_time
+from atciparotajs.time import expand_times
 from atciparotajs.phone import expand_phones
 from atciparotajs.currency import currency as _currency, CURRENCY_FORMS
 
@@ -32,9 +32,6 @@ _DEC_NUM = r'(\d+(?:[.,]\d+)?)'
 _RANGE_SEP_CORE = r'(?:\.\.\.|[…–—-])'
 _AMT_RANGE_SEP = rf'\s*{_RANGE_SEP_CORE}\s*'
 _RANGE_SEP = rf'(?:{_RANGE_SEP_CORE}|\s+{_RANGE_SEP_CORE}\s+)'
-
-# Clock time "H:MM" must be expanded before the general pattern sees the digits
-_TIME_PAT = re.compile(r'\b(\d{1,2}):(\d{2})\b')
 
 # Sports score "N:M" — single-digit second operand means it's not a clock time
 _SCORE_PAT = re.compile(r'\b(\d+):(\d+)\b')
@@ -526,7 +523,9 @@ def _next_word_bucket(text: str, pos: int) -> int:
 def convert(text: str, expand_abbr: bool = True, no_roman: bool = False) -> str:
     # Collapse space-separated thousands ("150 000" → "150000") before any numeric processing
     text = _SPACE_THOU_PAT.sub(lambda m: m.group(0).replace(" ", "").replace(" ", ""), text)
-    text = _TIME_PAT.sub(lambda m: clock_time(int(m.group(1)), int(m.group(2))), text)
+    # Clock times and time ranges must be expanded before the general pattern
+    # (and before _SCORE_PAT) sees the digits
+    text = expand_times(text)
     # Academic year slash range "2023./2024." before ordinal range pattern
     def _expand_acad_year(m: re.Match) -> str:
         bucket = _next_word_bucket(text, m.end())
