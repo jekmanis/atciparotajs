@@ -25,6 +25,14 @@ LAT_WORD = re.compile(r'[A-Za-zĀāČčĒēĢģĪīĶķĻļŅņŌōŖŗŠšŪū�
 # Counted amounts may be decimal ("2,5 kg"); the decimal part must not be split off
 _DEC_NUM = r'(\d+(?:[.,]\d+)?)'
 
+# Range separator: dash or ellipsis. A following unit abbreviation confirms the
+# range, so there spaces are free; without one they must be symmetric ("5 – 6",
+# not "5 -3" or "bija 5… 6"), leaving negative numbers and a sentence-trailing
+# ellipsis their own reading.
+_RANGE_SEP_CORE = r'(?:\.\.\.|[…–—-])'
+_AMT_RANGE_SEP = rf'\s*{_RANGE_SEP_CORE}\s*'
+_RANGE_SEP = rf'(?:{_RANGE_SEP_CORE}|\s+{_RANGE_SEP_CORE}\s+)'
+
 # Clock time "H:MM" must be expanded before the general pattern sees the digits
 _TIME_PAT = re.compile(r'\b(\d{1,2}):(\d{2})\b')
 
@@ -37,8 +45,9 @@ _ORD_RANGE_PAT = re.compile(r'(\d+)\.[–\-—](\d+)\.(?=\s|$)')
 # Undotted year range "NNNN–NNNN gad…" (e.g. "1941–1945 gads", "1941 – 1945 gads")
 _YEAR_RANGE_PAT = re.compile(r'\b(\d{4})\s*[–\-—]\s*(\d{4})(?=\s+gad)')
 
-# Number range "N–M" or "N-M" (hyphen/en-dash not preceded by start-of-range digit already consumed)
-_RANGE_PAT = re.compile(r'\b(\d+)[–\-—](\d+)\b')
+# Number range "N–M", "N - M", "N…M", "N...M"; either side may be decimal
+# ("0–1,5 milimetri"), so the decimal part is not torn off by the range split
+_RANGE_PAT = re.compile(rf'\b{_DEC_NUM}{_RANGE_SEP}{_DEC_NUM}\b')
 
 # Percentage range "N–M%" or "N-M%"
 _PCT_RANGE_PAT = re.compile(r'\b(\d+(?:[.,]\d+)?)[–\-—](\d+(?:[.,]\d+)?)\s*%')
@@ -159,10 +168,8 @@ _SPEED_PAT = re.compile(rf'{_DEC_NUM}\s*km/h(?=\s|$|[,.;])')
 _MS_SPEED_PAT = re.compile(rf'{_DEC_NUM}\s*m/s(?=\s|$|[,.;])')
 
 # Ranges of counted amounts: "0–2 mm", "1,5–3 km", "5–8 m/s", "80–100 km/h".
-# Separators: dash or ellipsis, spaces optional. These must run before the
-# generic range patterns, which would spell the digits out and leave the unit
-# abbreviation behind unexpanded.
-_AMT_RANGE_SEP = r'\s*(?:\.\.\.|[…–—-])\s*'
+# These must run before the generic range patterns, which would spell the digits
+# out and leave the unit abbreviation behind unexpanded.
 _UNIT_RANGE_PAT = re.compile(
     rf'{_DEC_NUM}{_AMT_RANGE_SEP}{_DEC_NUM}\s+({_UNIT_ABBR_RE})(?=\s|$|[,.;])')
 _SPEED_RANGE_PAT = re.compile(rf'{_DEC_NUM}{_AMT_RANGE_SEP}{_DEC_NUM}\s*km/h(?=\s|$|[,.;])')
@@ -243,6 +250,14 @@ def _spell_amount(raw: str, bucket: int, feminine: bool = False) -> str:
     # The integer part stays nominative even when the noun is genitive plural
     int_bucket = 2 if feminine else 1
     return fraction(int(int_part), dec_part, bucket, int_bucket=int_bucket)
+
+
+def _spell_number(raw: str, bucket: int) -> str:
+    """Spell one possibly decimal number the way the main number pass does."""
+    int_part, dec_part = _split_amount(raw)
+    if dec_part is None:
+        return cardinal(int(raw), bucket)
+    return fraction(int(int_part), dec_part, bucket)
 
 
 def _counted(raw: str, forms: tuple[str, str, str], feminine: bool = False) -> str:
@@ -555,7 +570,8 @@ def convert(text: str, expand_abbr: bool = True, no_roman: bool = False) -> str:
     # Ranges: use the following noun's bucket for both numbers
     def _expand_range(m: re.Match) -> str:
         bucket = _next_word_bucket(text, m.end())
-        return f"{cardinal(int(m.group(1)), bucket)} līdz {cardinal(int(m.group(2)), bucket)}"
+        return (f"{_spell_number(m.group(1), bucket)} līdz "
+                f"{_spell_number(m.group(2), bucket)}")
     text = _RANGE_PAT.sub(_expand_range, text)
     text = _PCT_PAT.sub(lambda m: _expand_pct(m, text), text)
     text = _NEG_PAT.sub(lambda m: "mīnus " + m.group(1), text)
