@@ -725,6 +725,43 @@ CLOCK_TIME_PLKST_CASES = [
 ]
 
 # ============================================================
+# Pulksteņa laiks ar punktu un laika intervāli
+# (dotted clock times "10.00" and time ranges "10.00–10.30")
+# ============================================================
+DOTTED_TIME_CASES = [
+    # Punktotais pieraksts ar norādi uz pulksteni lasās tāpat kā "10:00"
+    ("plkst. 10.00",            "pulksten desmitos"),
+    ("pulksten 9.05",           "pulksten deviņos piecās"),
+    ("plkst 14.30",             "plkst četrpadsmitos trīsdesmit"),
+    # Intervālus lasa ar "līdz" — gan ar kolu, gan ar punktu
+    ("plkst. 10:00–10:30",      "pulksten desmitos līdz desmitos trīsdesmit"),
+    ("plkst. 10.00–10.30",      "pulksten desmitos līdz desmitos trīsdesmit"),
+    ("plkst. 10.00 – 10.30",    "pulksten desmitos līdz desmitos trīsdesmit"),
+    ("10:00–10:30",             "desmitos līdz desmitos trīsdesmit"),
+    ("10.00–10.30",             "desmitos līdz desmitos trīsdesmit"),
+    ("10.00-10.30",             "desmitos līdz desmitos trīsdesmit"),
+    ("23.59–00.30",             "divdesmit trijos piecdesmit deviņās līdz nullē trīsdesmit"),
+    # Teikuma beigu punkts paliek pieturzīme, nekļūst par kārtas skaitli
+    ("plkst. 10.00–10.30.",     "pulksten desmitos līdz desmitos trīsdesmit."),
+    # "līdz" turpina norādi uz pulksteni
+    ("no plkst. 10.00 līdz 10.30",
+     "no pulksten desmitos līdz desmitos trīsdesmit"),
+    ("Ielikts kalendārā: 7. septembrī, plkst. 10.00–10.30.",
+     "Ielikts kalendārā: septītajā septembrī, pulksten desmitos līdz desmitos trīsdesmit."),
+]
+
+# Bez norādes uz pulksteni punktotais pieraksts paliek decimālskaitlis
+NOT_A_TIME_CASES = [
+    ("12.30",        "divpadsmit komats trīsdesmit"),
+    ("21.5 grami",   "divdesmit viens komats pieci grami"),
+    ("21,5 grami",   "divdesmit viens komats pieci grami"),
+    ("1.10",         "viens komats desmit"),
+    ("9.60",         "deviņi komats sešdesmit"),
+    ("3.–5. klase",  "trešā līdz piektā klase"),
+    ("1. – 2. vieta", "pirmā – otrā vieta"),
+]
+
+# ============================================================
 # Sporta rezultāti ar nulli (sports scores with zero)
 # ============================================================
 SCORE_EDGE_CASES = [
@@ -1041,4 +1078,14 @@ def test_decimal_units(text, expected):
 
 @pytest.mark.parametrize("text,expected", CURRENCY_WORD_CASES)
 def test_currency_word(text, expected):
+    assert convert(text) == expected
+
+
+@pytest.mark.parametrize("text,expected", DOTTED_TIME_CASES)
+def test_dotted_clock_times(text, expected):
+    assert convert(text) == expected
+
+
+@pytest.mark.parametrize("text,expected", NOT_A_TIME_CASES)
+def test_dotted_numbers_are_not_times(text, expected):
     assert convert(text) == expected
