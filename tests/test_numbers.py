@@ -380,6 +380,17 @@ RANGE_CASES = [
     ("5–10 minūtes",        "piecas līdz desmit minūtes"),
     ("6-8 cilvēki",         "seši līdz astoņi cilvēki"),
     ("6-8 cilvēkiem",       "sešiem līdz astoņiem cilvēkiem"),
+    ("5–10 cilvēki",        "pieci līdz desmit cilvēki"),
+    # written-out unit: the decimal must not be torn apart by the range split
+    ("0–2 milimetri",       "nulle līdz divi milimetri"),
+    ("0–1,5 milimetri",     "nulle līdz viens komats pieci milimetri"),
+    ("0–1,5 milimetru",     "nulle līdz vienu komats piecu milimetru"),
+    ("1,5–3 milimetri",     "viens komats pieci līdz trīs milimetri"),
+    ("2,5–3,5 kilogrami",   "divi komats pieci līdz trīs komats pieci kilogrami"),
+    ("0…2 milimetri",       "nulle līdz divi milimetri"),      # ellipsis character
+    ("0...1,5 milimetri",   "nulle līdz viens komats pieci milimetri"),  # three dots
+    ("Svētdien: pārsvarā sauss, 0–1,5 milimetri;",
+     "Svētdien: pārsvarā sauss, nulle līdz viens komats pieci milimetri;"),
 ]
 
 # ============================================================
