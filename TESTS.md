@@ -614,3 +614,33 @@ Auto-generated after each `pytest` run. Shows every parametrised case with its l
 | `2,50 euro` | `divi komats piecdesmit euro` | ✅ |
 | `Prece maksā 2,50 eiro.` | `Prece maksā divi komats piecdesmit eiro.` | ✅ |
 | `eiro kurss` | `eiro kurss` | ✅ |
+
+## Dotted Clock Times
+
+| Input | Expected | Result |
+|-------|----------|--------|
+| `plkst. 10.00` | `pulksten desmitos` | ✅ |
+| `pulksten 9.05` | `pulksten deviņos piecās` | ✅ |
+| `plkst 14.30` | `plkst četrpadsmitos trīsdesmit` | ✅ |
+| `plkst. 10:00–10:30` | `pulksten desmitos līdz desmitos trīsdesmit` | ✅ |
+| `plkst. 10.00–10.30` | `pulksten desmitos līdz desmitos trīsdesmit` | ✅ |
+| `plkst. 10.00 – 10.30` | `pulksten desmitos līdz desmitos trīsdesmit` | ✅ |
+| `10:00–10:30` | `desmitos līdz desmitos trīsdesmit` | ✅ |
+| `10.00–10.30` | `desmitos līdz desmitos trīsdesmit` | ✅ |
+| `10.00-10.30` | `desmitos līdz desmitos trīsdesmit` | ✅ |
+| `23.59–00.30` | `divdesmit trijos piecdesmit deviņās līdz nullē trīsdesmit` | ✅ |
+| `plkst. 10.00–10.30.` | `pulksten desmitos līdz desmitos trīsdesmit.` | ✅ |
+| `no plkst. 10.00 līdz 10.30` | `no pulksten desmitos līdz desmitos trīsdesmit` | ✅ |
+| `Ielikts kalendārā: 7. septembrī, plkst. 10.00–10.30.` | `Ielikts kalendārā: septītajā septembrī, pulksten desmitos līdz desmitos trīsdesmit.` | ✅ |
+
+## Dotted Numbers Are Not Times
+
+| Input | Expected | Result |
+|-------|----------|--------|
+| `12.30` | `divpadsmit komats trīsdesmit` | ✅ |
+| `21.5 grami` | `divdesmit viens komats pieci grami` | ✅ |
+| `21,5 grami` | `divdesmit viens komats pieci grami` | ✅ |
+| `1.10` | `viens komats desmit` | ✅ |
+| `9.60` | `deviņi komats sešdesmit` | ✅ |
+| `3.–5. klase` | `trešā līdz piektā klase` | ✅ |
+| `1. – 2. vieta` | `pirmā – otrā vieta` | ✅ |
