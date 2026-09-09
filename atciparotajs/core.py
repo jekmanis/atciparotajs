@@ -121,8 +121,17 @@ _CAP_WORD_AFTER = re.compile(r'^\s+[A-ZĀČĒĢĪĶĻŅŠŪŽ]')
 # Tonne: "53T" or "53 T" → "piecdesmit trīs tonnas" (feminine)
 _TONNE_PAT = re.compile(rf'{_DEC_NUM}\s*T(?=\s|$|[,.])')
 
-# Temperature: "36°C", "100°F", "90°"
-_TEMP_PAT = re.compile(rf'{_DEC_NUM}°[CF]?(?=\s|$|[,.])')
+# Temperature: "36°C", "100°F", "90°", "21 °C", "+21°C", "+14…+15 °C", "-5…-3°C"
+# Range separators: ellipsis ("…" or "..."), en/em dash, hyphen — spaces optional.
+_TEMP_SEP = r'\s*(?:\.\.\.|[…–—-])\s*'
+# Optional second operand of a range; groups: 3=sign, 4=number
+_TEMP_RANGE = rf'(?:{_TEMP_SEP}([+-]?){_DEC_NUM})?'
+# Groups: 1=sign, 2=number, 3=sign, 4=number
+_TEMP_PAT = re.compile(rf'([+-]?){_DEC_NUM}{_TEMP_RANGE}\s*°[CF]?(?=\s|$|[,.;:!?)])')
+
+# Signed values and ranges written out as "… grādi" ("+5 grādi", "+14…+15 grādi").
+# The noun itself is left as the author wrote it; only signs and the range are expanded.
+_TEMP_WORD_PAT = re.compile(rf'([+-]?){_DEC_NUM}{_TEMP_RANGE}(?=\s+grād)')
 
 # Vulgar fractions: "3/4", "1/2"; mixed: "2 1/4"
 _FRACTION_DENOM = {
@@ -247,18 +256,74 @@ def _prev_word(text: str, start: int) -> str | None:
     return m.group(0)[::-1]
 
 
-def _expand_temp(m: re.Match) -> str:
-    # Temperatures read colloquially: "divdesmit grādi", not "divdesmit grādu"
-    int_part, dec_part = _split_amount(m.group(1))
-    n = int(dec_part) if dec_part is not None else int(m.group(1))
-    if dec_part is None and n == 0:
-        return "nulle grādu"
+def _sign_word(sign: str) -> str:
+    """Spoken form of a temperature sign; unsigned values get no prefix."""
+    return {"+": "plus ", "-": "mīnus "}.get(sign, "")
+
+
+def _temp_bucket(raw: str) -> int:
+    """Case bucket for a temperature value, read colloquially (nominative)."""
+    _, dec_part = _split_amount(raw)
+    n = int(dec_part) if dec_part is not None else int(raw)
     last2 = n % 100
     last1 = n % 10
-    noun, bucket = ("grāds", 1) if last1 == 1 and last2 != 11 else ("grādi", 8)
+    return 1 if last1 == 1 and last2 != 11 else 8
+
+
+def _spell_temp(raw: str, sign: str) -> str:
+    int_part, dec_part = _split_amount(raw)
+    bucket = _temp_bucket(raw)
     if dec_part is None:
-        return f"{cardinal(n, bucket)} {noun}"
-    return f"{fraction(int(int_part), dec_part, bucket, int_bucket=1)} {noun}"
+        return _sign_word(sign) + cardinal(int(raw), bucket)
+    return _sign_word(sign) + fraction(int(int_part), dec_part, bucket, int_bucket=1)
+
+
+def _temp_noun(raw: str) -> str:
+    """Colloquial noun for a temperature value: "grāds" for …1, "grādu" for
+    integer zero (CLDR zero form = genitive plural), "grādi" otherwise."""
+    if _split_amount(raw)[1] is None and int(raw) == 0:
+        return "grādu"
+    return "grāds" if _temp_bucket(raw) == 1 else "grādi"
+
+
+def _expand_temp(m: re.Match) -> str:
+    # Temperatures read colloquially: "divdesmit grādi", not "divdesmit grādu".
+    # In a range the noun agrees with the last number spoken.
+    sign1, num1, sign2, num2 = m.group(1), m.group(2), m.group(3), m.group(4)
+    noun = _temp_noun(num1 if num2 is None else num2)
+    if num2 is None:
+        return f"{_spell_temp(num1, sign1)} {noun}"
+    return f"{_spell_temp(num1, sign1)} līdz {_spell_temp(num2, sign2)} {noun}"
+
+
+# Nominative-style noun forms after which temperatures are read colloquially
+# ("divdesmit viens grādi", "mīnus viens līdz nulle grādi"), each number with
+# its own bucket. Other forms ("grādiem", "grādos") follow the noun's case.
+_TEMP_NOM_NOUNS = {"grāds", "grādi", "grādu"}
+_TEMP_NOUN_AFTER = re.compile(r'\s+(grād\w*)')
+
+
+def _expand_temp_word(m: re.Match, full_text: str) -> str:
+    """Expand signs/ranges before an explicit "grād…" noun, leaving the noun alone."""
+    sign1, num1, sign2, num2 = m.group(1), m.group(2), m.group(3), m.group(4)
+    noun_m = _TEMP_NOUN_AFTER.match(full_text, m.end())
+    colloquial = noun_m is not None and noun_m.group(1).lower() in _TEMP_NOM_NOUNS
+    if not colloquial and not sign1 and not sign2 and num2 is None:
+        return m.group(0)   # plain "5 grādiem" — leave it to the general pattern
+    case_bucket = None if colloquial else _next_word_bucket(full_text, m.end())
+
+    def spell(raw: str, sign: str) -> str:
+        int_part, dec_part = _split_amount(raw)
+        bucket = _temp_bucket(raw) if case_bucket is None else case_bucket
+        if dec_part is None:
+            return _sign_word(sign) + cardinal(int(raw), bucket)
+        if case_bucket is None:
+            return _sign_word(sign) + fraction(int(int_part), dec_part, bucket, int_bucket=1)
+        return _sign_word(sign) + fraction(int(int_part), dec_part, bucket)
+
+    if num2 is None:
+        return spell(num1, sign1)
+    return f"{spell(num1, sign1)} līdz {spell(num2, sign2)}"
 
 
 def _expand_tonne(m: re.Match) -> str:
@@ -410,6 +475,10 @@ def convert(text: str, expand_abbr: bool = True, no_roman: bool = False) -> str:
     text = _SCORE_PAT.sub(
         lambda m: f"{cardinal(int(m.group(1)), 1)} {cardinal(int(m.group(2)), 1)}", text
     )
+    # Temperatures (signs and ranges included) must run before the generic range
+    # and negative-number handlers, otherwise "°" is left orphaned
+    text = _TEMP_PAT.sub(_expand_temp, text)
+    text = _TEMP_WORD_PAT.sub(lambda m: _expand_temp_word(m, text), text)
     # Percentage ranges "N–M%" must be handled before general range and pct patterns
     def _expand_pct_range(m: re.Match) -> str:
         prev = _prev_word(text, m.start())
@@ -471,8 +540,6 @@ def convert(text: str, expand_abbr: bool = True, no_roman: bool = False) -> str:
     # Mixed fractions "2 1/4" before simple "3/4" and before general pattern
     text = _MIXED_FRAC_PAT.sub(_expand_mixed_fraction, text)
     text = _SIMPLE_FRAC_PAT.sub(lambda m: _expand_vulgar_fraction(int(m.group(1)), int(m.group(2))), text)
-    # Temperature "36°C", "90°"
-    text = _TEMP_PAT.sub(_expand_temp, text)
     # Age-gate labels "18+" before general pattern
     text = _AGE_GATE_PAT.sub(lambda m: cardinal(int(m.group(1)), 1) + " plus", text)
     # "sezona 2" → "otrā sezona" (cardinal after "sezona" treated as ordinal, word order flipped)
