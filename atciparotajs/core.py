@@ -25,6 +25,14 @@ LAT_WORD = re.compile(r'[A-Za-zĀāČčĒēĢģĪīĶķĻļŅņŌōŖŗŠšŪū�
 # Counted amounts may be decimal ("2,5 kg"); the decimal part must not be split off
 _DEC_NUM = r'(\d+(?:[.,]\d+)?)'
 
+# Range separator: dash or ellipsis. A following unit abbreviation confirms the
+# range, so there spaces are free; without one they must be symmetric ("5 – 6",
+# not "5 -3" or "bija 5… 6"), leaving negative numbers and a sentence-trailing
+# ellipsis their own reading.
+_RANGE_SEP_CORE = r'(?:\.\.\.|[…–—-])'
+_AMT_RANGE_SEP = rf'\s*{_RANGE_SEP_CORE}\s*'
+_RANGE_SEP = rf'(?:{_RANGE_SEP_CORE}|\s+{_RANGE_SEP_CORE}\s+)'
+
 # Clock time "H:MM" must be expanded before the general pattern sees the digits
 _TIME_PAT = re.compile(r'\b(\d{1,2}):(\d{2})\b')
 
@@ -37,8 +45,9 @@ _ORD_RANGE_PAT = re.compile(r'(\d+)\.[–\-—](\d+)\.(?=\s|$)')
 # Undotted year range "NNNN–NNNN gad…" (e.g. "1941–1945 gads", "1941 – 1945 gads")
 _YEAR_RANGE_PAT = re.compile(r'\b(\d{4})\s*[–\-—]\s*(\d{4})(?=\s+gad)')
 
-# Number range "N–M" or "N-M" (hyphen/en-dash not preceded by start-of-range digit already consumed)
-_RANGE_PAT = re.compile(r'\b(\d+)[–\-—](\d+)\b')
+# Number range "N–M", "N - M", "N…M", "N...M"; either side may be decimal
+# ("0–1,5 milimetri"), so the decimal part is not torn off by the range split
+_RANGE_PAT = re.compile(rf'\b{_DEC_NUM}{_RANGE_SEP}{_DEC_NUM}\b')
 
 # Percentage range "N–M%" or "N-M%"
 _PCT_RANGE_PAT = re.compile(r'\b(\d+(?:[.,]\d+)?)[–\-—](\d+(?:[.,]\d+)?)\s*%')
@@ -152,8 +161,19 @@ _SIMPLE_FRAC_PAT = re.compile(r'(\d+)/(\d+)')
 # Class notation: "4.D klase", "4.d klasei"
 _CLASS_PAT = re.compile(r'(\d+)\.([A-Za-z])\s+((?:klase|klaš)\w*)', re.IGNORECASE)
 
-# Speed: "100 km/h"
-_SPEED_PAT = re.compile(rf'{_DEC_NUM}\s*km/h(?=\s|$|[,.])')
+# Speed: "100 km/h", "5 m/s"
+_KMH_FORMS = ("kilometrs", "kilometri", "kilometru")
+_MS_FORMS = ("metrs", "metri", "metru")
+_SPEED_PAT = re.compile(rf'{_DEC_NUM}\s*km/h(?=\s|$|[,.;])')
+_MS_SPEED_PAT = re.compile(rf'{_DEC_NUM}\s*m/s(?=\s|$|[,.;])')
+
+# Ranges of counted amounts: "0–2 mm", "1,5–3 km", "5–8 m/s", "80–100 km/h".
+# These must run before the generic range patterns, which would spell the digits
+# out and leave the unit abbreviation behind unexpanded.
+_UNIT_RANGE_PAT = re.compile(
+    rf'{_DEC_NUM}{_AMT_RANGE_SEP}{_DEC_NUM}\s+({_UNIT_ABBR_RE})(?=\s|$|[,.;])')
+_SPEED_RANGE_PAT = re.compile(rf'{_DEC_NUM}{_AMT_RANGE_SEP}{_DEC_NUM}\s*km/h(?=\s|$|[,.;])')
+_MS_SPEED_RANGE_PAT = re.compile(rf'{_DEC_NUM}{_AMT_RANGE_SEP}{_DEC_NUM}\s*m/s(?=\s|$|[,.;])')
 
 # Age-gate label: "18+" → "astoņpadsmit plus"
 _AGE_GATE_PAT = re.compile(r'\b(\d+)\+')
@@ -206,29 +226,61 @@ def _split_amount(raw: str) -> tuple[str, str | None]:
     return raw, None
 
 
+def _count_form(raw: str, forms: tuple[str, str, str],
+                feminine: bool = False) -> tuple[str, int]:
+    """Pick the noun form and case bucket agreeing with a counted amount."""
+    nom_sg, nom_pl, gen_pl = forms
+    sg_bucket, pl_bucket = (2, 3) if feminine else (1, 8)
+    dec_part = _split_amount(raw)[1]
+    n = int(dec_part) if dec_part is not None else int(raw)
+    last2 = n % 100
+    last1 = n % 10
+    if last1 == 1 and last2 != 11:
+        return nom_sg, sg_bucket
+    if 2 <= last1 <= 9 and not (10 <= last2 <= 19):
+        return nom_pl, pl_bucket
+    return gen_pl, 6
+
+
+def _spell_amount(raw: str, bucket: int, feminine: bool = False) -> str:
+    """Spell one possibly decimal amount in the given case bucket."""
+    int_part, dec_part = _split_amount(raw)
+    if dec_part is None:
+        return cardinal(int(raw), bucket)
+    # The integer part stays nominative even when the noun is genitive plural
+    int_bucket = 2 if feminine else 1
+    return fraction(int(int_part), dec_part, bucket, int_bucket=int_bucket)
+
+
+def _spell_number(raw: str, bucket: int) -> str:
+    """Spell one possibly decimal number the way the main number pass does."""
+    int_part, dec_part = _split_amount(raw)
+    if dec_part is None:
+        return cardinal(int(raw), bucket)
+    return fraction(int(int_part), dec_part, bucket)
+
+
 def _counted(raw: str, forms: tuple[str, str, str], feminine: bool = False) -> str:
     """Spell a possibly decimal amount together with its noun.
 
     The noun agrees with the last number spoken, so "2,5 kg" reads
     "divi komats pieci kilogrami" (five kilograms), not "two kilograms".
     """
-    nom_sg, nom_pl, gen_pl = forms
-    sg_bucket, pl_bucket = (2, 3) if feminine else (1, 8)
-    int_part, dec_part = _split_amount(raw)
-    n = int(dec_part) if dec_part is not None else int(raw)
-    last2 = n % 100
-    last1 = n % 10
-    if last1 == 1 and last2 != 11:
-        noun, bucket = nom_sg, sg_bucket
-    elif 2 <= last1 <= 9 and not (10 <= last2 <= 19):
-        noun, bucket = nom_pl, pl_bucket
-    else:
-        noun, bucket = gen_pl, 6
-    if dec_part is None:
-        return f"{cardinal(n, bucket)} {noun}"
-    # The integer part stays nominative even when the noun is genitive plural
-    int_bucket = 2 if feminine else 1
-    return f"{fraction(int(int_part), dec_part, bucket, int_bucket=int_bucket)} {noun}"
+    noun, bucket = _count_form(raw, forms, feminine)
+    return f"{_spell_amount(raw, bucket, feminine)} {noun}"
+
+
+def _counted_range(raw1: str, raw2: str, forms: tuple[str, str, str],
+                   feminine: bool = False) -> str:
+    """Spell a range of amounts together with its noun.
+
+    As for a single amount the noun agrees with the last number spoken, and
+    both numbers are spelled in the case that goes with that noun form, so
+    "10–20 cm" reads "desmit līdz divdesmit centimetru".
+    """
+    noun, bucket = _count_form(raw2, forms, feminine)
+    return (f"{_spell_amount(raw1, bucket, feminine)} līdz "
+            f"{_spell_amount(raw2, bucket, feminine)} {noun}")
 
 
 def _expand_super_unit(m: re.Match) -> str:
@@ -239,8 +291,24 @@ def _expand_unit(m: re.Match) -> str:
     return _counted(m.group(1), _UNIT_MAP[m.group(2)])
 
 
+def _expand_unit_range(m: re.Match) -> str:
+    return _counted_range(m.group(1), m.group(2), _UNIT_MAP[m.group(3)])
+
+
 def _expand_speed(m: re.Match) -> str:
-    return _counted(m.group(1), ("kilometrs", "kilometri", "kilometru")) + " stundā"
+    return _counted(m.group(1), _KMH_FORMS) + " stundā"
+
+
+def _expand_speed_range(m: re.Match) -> str:
+    return _counted_range(m.group(1), m.group(2), _KMH_FORMS) + " stundā"
+
+
+def _expand_ms_speed(m: re.Match) -> str:
+    return _counted(m.group(1), _MS_FORMS) + " sekundē"
+
+
+def _expand_ms_speed_range(m: re.Match) -> str:
+    return _counted_range(m.group(1), m.group(2), _MS_FORMS) + " sekundē"
 
 
 def _expand_lpp(m: re.Match) -> str:
@@ -471,6 +539,11 @@ def convert(text: str, expand_abbr: bool = True, no_roman: bool = False) -> str:
     text = _ORD_RANGE_PAT.sub(_expand_ord_range, text)
     # Undotted year ranges "1941–1945 gads" — treat as ordinals
     text = _YEAR_RANGE_PAT.sub(_expand_ord_range, text)
+    # Ranges before a unit ("0–2 mm", "5–8 m/s") must run before the generic
+    # range patterns, which would leave the abbreviation unexpanded
+    text = _SPEED_RANGE_PAT.sub(_expand_speed_range, text)
+    text = _MS_SPEED_RANGE_PAT.sub(_expand_ms_speed_range, text)
+    text = _UNIT_RANGE_PAT.sub(_expand_unit_range, text)
     # Scores must run after time (so clock patterns are already consumed)
     text = _SCORE_PAT.sub(
         lambda m: f"{cardinal(int(m.group(1)), 1)} {cardinal(int(m.group(2)), 1)}", text
@@ -497,14 +570,16 @@ def convert(text: str, expand_abbr: bool = True, no_roman: bool = False) -> str:
     # Ranges: use the following noun's bucket for both numbers
     def _expand_range(m: re.Match) -> str:
         bucket = _next_word_bucket(text, m.end())
-        return f"{cardinal(int(m.group(1)), bucket)} līdz {cardinal(int(m.group(2)), bucket)}"
+        return (f"{_spell_number(m.group(1), bucket)} līdz "
+                f"{_spell_number(m.group(2), bucket)}")
     text = _RANGE_PAT.sub(_expand_range, text)
     text = _PCT_PAT.sub(lambda m: _expand_pct(m, text), text)
     text = _NEG_PAT.sub(lambda m: "mīnus " + m.group(1), text)
     # Handle superscript units (km², m², m³) before plain unit abbreviations
     text = _SUPER_PAT.sub(_expand_super_unit, text)
-    # Handle speed (km/h) before plain unit abbreviations (which also match "km")
+    # Handle speed (km/h, m/s) before plain unit abbreviations (which also match "km", "m")
     text = _SPEED_PAT.sub(_expand_speed, text)
+    text = _MS_SPEED_PAT.sub(_expand_ms_speed, text)
     # Handle unit abbreviations (km, m, kg) before general abbreviation expansion
     text = _UNIT_PAT.sub(_expand_unit, text)
     # Handle tonnes (feminine) — "53T" or "53 T"
