@@ -8,17 +8,32 @@ from atciparotajs.fractions import fraction
 from atciparotajs.roman import roman_to_int, is_valid_roman
 from atciparotajs.abbreviations import expand_abbreviations
 from atciparotajs.time import expand_times
-from atciparotajs.phone import expand_phones
+from atciparotajs.phone import expand_phones, spell_phone
 from atciparotajs.currency import currency as _currency, CURRENCY_FORMS
+
+# What may follow an ordinal dot: whitespace, end of text, a letter glued to
+# the dot ("2026.gada", "XX.gadsimts") or closing punctuation ("3., 4. vieta").
+_AFTER_ORD = r'(?=\s|$|[^\W\d_]|[,;:)\]!?”"\'])'
 
 # Groups: 1,2=decimal; 3=arabic ordinal; 4=roman ordinal; 5=roman cardinal; 6=arabic cardinal
 PATTERN = re.compile(
     r'(\d+)[.,](\d+)'              # groups 1,2: decimal number
-    r'|(\d+)\.(?=\s|$)'           # group 3: arabic ordinal (digit + dot + space/end)
-    r'|([IVXLCDM]+)\.(?=\s|$)'   # group 4: roman ordinal
+    rf'|(\d+)\.{_AFTER_ORD}'      # group 3: arabic ordinal (digit + dot)
+    rf'|([IVXLCDM]+)\.{_AFTER_ORD}'  # group 4: roman ordinal
     r'|\b([IVXLCDM]+)\b'          # group 5: roman cardinal
     r'|(\d+)'                      # group 6: arabic cardinal
 )
+
+
+def _glue_space(text: str, pos: int) -> str:
+    """Space needed after a consumed ordinal dot that glued two words together.
+
+    "2026.gada" loses its dot when the ordinal expands, so without this the
+    result would read "sestāgada".
+    """
+    if pos < len(text) and re.match(r'[^\W\d_]', text[pos]):
+        return " "
+    return ""
 
 LAT_WORD = re.compile(r'[A-Za-zĀāČčĒēĢģĪīĶķĻļŅņŌōŖŗŠšŪūŽžāēīūčšžģķļņŗ]+')
 
@@ -37,7 +52,7 @@ _RANGE_SEP = rf'(?:{_RANGE_SEP_CORE}|\s+{_RANGE_SEP_CORE}\s+)'
 _SCORE_PAT = re.compile(r'\b(\d+):(\d+)\b')
 
 # Ordinal year range "N.–M." (e.g. "1941.–1945. gads")
-_ORD_RANGE_PAT = re.compile(r'(\d+)\.[–\-—](\d+)\.(?=\s|$)')
+_ORD_RANGE_PAT = re.compile(rf'(\d+)\.[–\-—](\d+)\.{_AFTER_ORD}')
 
 # Undotted year range "NNNN–NNNN gad…" (e.g. "1941–1945 gads", "1941 – 1945 gads")
 _YEAR_RANGE_PAT = re.compile(r'\b(\d{4})\s*[–\-—]\s*(\d{4})(?=\s+gad)')
@@ -50,10 +65,10 @@ _RANGE_PAT = re.compile(rf'\b{_DEC_NUM}{_RANGE_SEP}{_DEC_NUM}\b')
 _PCT_RANGE_PAT = re.compile(r'\b(\d+(?:[.,]\d+)?)[–\-—](\d+(?:[.,]\d+)?)\s*%')
 
 # Space-separated thousands like "150 000" (collapse to plain number before any other processing)
-_SPACE_THOU_PAT = re.compile(r'\b(\d{1,3}(?:[  ]\d{3})+)\b')
+_SPACE_THOU_PAT = re.compile(r'\b(\d{1,3}(?:[  ]{1,2}\d{3})+)\b')
 
 # Matches "N lpp." to handle noun inflection together with the number
-_LPP_PAT = re.compile(rf'{_DEC_NUM}\s+lpp\.')
+_LPP_PAT = re.compile(rf'{_DEC_NUM}\s*lpp\.')
 
 # Unit abbreviations that must be inflected based on the preceding number
 _UNIT_MAP = {
@@ -73,7 +88,7 @@ _UNIT_MAP = {
     "g.":  ("grams",      "grami",      "gramu"),
 }
 _UNIT_ABBR_RE = "|".join(re.escape(k) for k in sorted(_UNIT_MAP, key=len, reverse=True))
-_UNIT_PAT = re.compile(rf'{_DEC_NUM}\s+({_UNIT_ABBR_RE})(?=\s|$|[,.])')
+_UNIT_PAT = re.compile(rf'{_DEC_NUM}\s*({_UNIT_ABBR_RE})(?=\s|$|[,.])')
 
 # Superscript units: km², m², m³, km³
 _SUPER_UNIT_MAP = {
@@ -83,7 +98,7 @@ _SUPER_UNIT_MAP = {
     "m³":  ("kubikmetrs",       "kubikmetri",       "kubikmetru"),
 }
 _SUPER_ABBR_RE = "|".join(re.escape(k) for k in sorted(_SUPER_UNIT_MAP, key=len, reverse=True))
-_SUPER_PAT = re.compile(rf'{_DEC_NUM}\s+({_SUPER_ABBR_RE})(?=\s|$|[,.])')
+_SUPER_PAT = re.compile(rf'{_DEC_NUM}\s*({_SUPER_ABBR_RE})(?=\s|$|[,.])')
 
 # Negative numbers: "-N" at word boundary, not preceded by a digit (avoid ranges like "5-6")
 _NEG_PAT = re.compile(r'(?<!\d)-(\d+(?:[.,]\d+)?)')
@@ -121,7 +136,7 @@ _ROMAN_CONTEXT = re.compile(
 # Single word preceding a Roman-numeral candidate (to detect surname initials)
 _WORD_BEFORE = re.compile(r'\w+\s+$')
 # Capital-letter word following a dot+space — indicates a surname after an initial
-_CAP_WORD_AFTER = re.compile(r'^\s+[A-ZĀČĒĢĪĶĻŅŠŪŽ]')
+_CAP_WORD_AFTER = re.compile(r'^\s*[A-ZĀČĒĢĪĶĻŅŠŪŽ]')
 
 # Currency patterns — amount with symbol or ISO code
 # Tonne: "53T" or "53 T" → "piecdesmit trīs tonnas" (feminine)
@@ -168,7 +183,7 @@ _MS_SPEED_PAT = re.compile(rf'{_DEC_NUM}\s*m/s(?=\s|$|[,.;])')
 # These must run before the generic range patterns, which would spell the digits
 # out and leave the unit abbreviation behind unexpanded.
 _UNIT_RANGE_PAT = re.compile(
-    rf'{_DEC_NUM}{_AMT_RANGE_SEP}{_DEC_NUM}\s+({_UNIT_ABBR_RE})(?=\s|$|[,.;])')
+    rf'{_DEC_NUM}{_AMT_RANGE_SEP}{_DEC_NUM}\s*({_UNIT_ABBR_RE})(?=\s|$|[,.;])')
 _SPEED_RANGE_PAT = re.compile(rf'{_DEC_NUM}{_AMT_RANGE_SEP}{_DEC_NUM}\s*km/h(?=\s|$|[,.;])')
 _MS_SPEED_RANGE_PAT = re.compile(rf'{_DEC_NUM}{_AMT_RANGE_SEP}{_DEC_NUM}\s*m/s(?=\s|$|[,.;])')
 
@@ -182,7 +197,7 @@ _EPISODE_PAT = re.compile(r'\bS\d+E\d+\b', re.IGNORECASE)
 _SEASON_CARDINAL_PAT = re.compile(r'\b(sezona)\s+(\d+)\b', re.IGNORECASE)
 
 # Academic year slash range: "2023./2024."
-_ACAD_YEAR_PAT = re.compile(r'(\d+)\./(\d+)\.(?=\s|$|[,])')
+_ACAD_YEAR_PAT = re.compile(rf'(\d+)\./(\d+)\.{_AFTER_ORD}')
 
 _CURRENCY_SYMBOL_MAP = {'€': 'EUR', '$': 'USD', '£': 'GBP'}
 _CUR_CODES_RE = '|'.join(re.escape(c) for c in sorted(CURRENCY_FORMS, key=len, reverse=True))
@@ -529,12 +544,14 @@ def convert(text: str, expand_abbr: bool = True, no_roman: bool = False) -> str:
     # Academic year slash range "2023./2024." before ordinal range pattern
     def _expand_acad_year(m: re.Match) -> str:
         bucket = _next_word_bucket(text, m.end())
-        return f"{ordinal(int(m.group(1)), bucket)} līdz {ordinal(int(m.group(2)), bucket)}"
+        return (f"{ordinal(int(m.group(1)), bucket)} līdz "
+                f"{ordinal(int(m.group(2)), bucket)}{_glue_space(text, m.end())}")
     text = _ACAD_YEAR_PAT.sub(_expand_acad_year, text)
     # Ordinal ranges like "1941.–1945. gads" must run before general range/ordinal patterns
     def _expand_ord_range(m: re.Match) -> str:
         bucket = _next_word_bucket(text, m.end())
-        return f"{ordinal(int(m.group(1)), bucket)} līdz {ordinal(int(m.group(2)), bucket)}"
+        return (f"{ordinal(int(m.group(1)), bucket)} līdz "
+                f"{ordinal(int(m.group(2)), bucket)}{_glue_space(text, m.end())}")
     text = _ORD_RANGE_PAT.sub(_expand_ord_range, text)
     # Undotted year ranges "1941–1945 gads" — treat as ordinals
     text = _YEAR_RANGE_PAT.sub(_expand_ord_range, text)
@@ -634,7 +651,7 @@ def convert(text: str, expand_abbr: bool = True, no_roman: bool = False) -> str:
         if m.group(1) is not None:   # decimal
             return fraction(int(m.group(1)), m.group(2), bucket)
         elif m.group(3) is not None:  # arabic ordinal
-            return ordinal(int(m.group(3)), bucket)
+            return ordinal(int(m.group(3)), bucket) + _glue_space(text, m.end())
         elif m.group(4) is not None or m.group(5) is not None:  # roman ordinal/cardinal
             if no_roman:
                 return m.group(0)
@@ -649,10 +666,17 @@ def convert(text: str, expand_abbr: bool = True, no_roman: bool = False) -> str:
             if len(s) == 1 and _CAP_WORD_AFTER.match(after):
                 return m.group(0)
             if is_valid_roman(s):
-                return ordinal(roman_to_int(s), bucket)
+                glue = _glue_space(text, m.end()) if m.group(4) is not None else ""
+                return ordinal(roman_to_int(s), bucket) + glue
             return m.group(0)
         elif m.group(6) is not None:  # arabic cardinal
-            return cardinal(int(m.group(6)), bucket)
+            digits = m.group(6)
+            # Identifier codes (cadastre, account, registration numbers) are read
+            # digit by digit: too long to be a quantity, or padded with a
+            # leading zero, which a cardinal reading would silently drop.
+            if len(digits) >= 10 or (len(digits) >= 2 and digits[0] == '0'):
+                return spell_phone(digits)
+            return cardinal(int(digits), bucket)
         return m.group(0)
 
     text = PATTERN.sub(replace, text)
