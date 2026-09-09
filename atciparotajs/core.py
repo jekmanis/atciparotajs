@@ -68,6 +68,15 @@ _RANGE_PAT = re.compile(rf'\b{_DEC_NUM}{_RANGE_SEP}{_DEC_NUM}\b')
 # Percentage range "N–M%" or "N-M%"
 _PCT_RANGE_PAT = re.compile(r'\b(\d+(?:[.,]\d+)?)[–\-—](\d+(?:[.,]\d+)?)\s*%')
 
+# Identifier codes: a token with two or more dashes and at least one digit
+# ("BIS-BL-827846-114426", "978-9934-0-1234-5"). Not a range; every digit run is
+# read digit by digit like a phone number. Both dashes must be glued between
+# alphanumerics, so a signed temperature range ("-5…-3°C") is not taken for a code.
+_CODE_PAT = re.compile(r'(?<!\S)(?=\S*\d)(?=(?:\S*[^\W_][-–—](?=[^\W_])){2})\S+')
+
+# Maximal digit run inside an identifier code
+_CODE_DIGITS_PAT = re.compile(r'\d+')
+
 # Space-separated thousands like "150 000" (collapse to plain number before any other processing)
 _SPACE_THOU_PAT = re.compile(r'\b(\d{1,3}(?:[  ]{1,2}\d{3})+)\b')
 
@@ -104,8 +113,10 @@ _SUPER_UNIT_MAP = {
 _SUPER_ABBR_RE = "|".join(re.escape(k) for k in sorted(_SUPER_UNIT_MAP, key=len, reverse=True))
 _SUPER_PAT = re.compile(rf'{_DEC_NUM}\s*({_SUPER_ABBR_RE}){_UNIT_END}')
 
-# Negative numbers: "-N" at word boundary, not preceded by a digit (avoid ranges like "5-6")
-_NEG_PAT = re.compile(r'(?<!\d)-(\d+(?:[.,]\d+)?)')
+# Negative numbers: "-N" at word boundary, not preceded by a digit (avoid ranges
+# like "5-6"), a letter or another dash — a glued hyphen belongs to a name or a
+# code ("COVID-19", "LV-1010"), not to a negative number.
+_NEG_PAT = re.compile(r'(?<![\w-])-(\d+(?:[.,]\d+)?)')
 
 # Percentage: integer or decimal followed by %
 _PCT_PAT = re.compile(r'(\d+(?:[.,]\d+)?)\s*%')
@@ -551,6 +562,13 @@ def _next_word_bucket(text: str, pos: int) -> int:
 def convert(text: str, expand_abbr: bool = True, no_roman: bool = False) -> str:
     # Collapse space-separated thousands ("150 000" → "150000") before any numeric processing
     text = _SPACE_THOU_PAT.sub(lambda m: m.group(0).replace(" ", "").replace(" ", ""), text)
+    # Identifier codes ("BIS-BL-827846-114426") must be spelled out before any
+    # range pattern reads the dashes as "līdz". Only the digit runs are rewritten;
+    # letters, dashes and punctuation stay as written. No digits are left behind,
+    # so the later passes leave the token alone.
+    text = _CODE_PAT.sub(
+        lambda m: _CODE_DIGITS_PAT.sub(lambda d: spell_phone(d.group(0)), m.group(0)),
+        text)
     # Clock times and time ranges must be expanded before the general pattern
     # (and before _SCORE_PAT) sees the digits
     text = expand_times(text)

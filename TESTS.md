@@ -850,3 +850,29 @@ Auto-generated after each `pytest` run. Shows every parametrised case with its l
 | `(Nr. 5) mājas` | `(numur pieci) mājas` | ✅ |
 | `1., 2. un 3. vieta` | `pirmā, otrā un trešā vieta` | ✅ |
 | `3.,4.vieta` | `trešā,ceturtā vieta` | ✅ |
+
+## Identifier Codes Are Not Ranges
+
+| Input | Expected | Result |
+|-------|----------|--------|
+| `BIS-BL-827846-114426` | `BIS-BL-astoņi divi septiņi astoņi četri seši-viens viens četri četri divi seši` | ✅ |
+| `lieta BIS-BL-827846-114426, būvdarbu` | `lieta BIS-BL-astoņi divi septiņi astoņi četri seši-viens viens četri četri divi seši, būvdarbu` | ✅ |
+| `“BIS-BL-827846-114426”` | `“BIS-BL-astoņi divi septiņi astoņi četri seši-viens viens četri četri divi seši”` | ✅ |
+| `ISBN 978-9934-0-1234-5` | `ISBN deviņi septiņi astoņi-deviņi deviņi trīs četri-nulle-viens divi trīs četri-pieci` | ✅ |
+| `1941–1945 gads` | `tūkstoš deviņsimt četrdesmit pirmais līdz tūkstoš deviņsimt četrdesmit piektais gads` | ✅ |
+| `5–6 grādi` | `pieci līdz seši grādi` | ✅ |
+| `0–2 mm` | `nulle līdz divi milimetri` | ✅ |
+| `10-20 procenti` | `desmit līdz divdesmit procenti` | ✅ |
+| `80–100 km/h` | `astoņdesmit līdz simts kilometru stundā` | ✅ |
+
+## Hyphen After Letter Is Not Minus
+
+| Input | Expected | Result |
+|-------|----------|--------|
+| `COVID-19` | `COVID-deviņpadsmit` | ✅ |
+| `LV-1010` | `LV-tūkstoš desmit` | ✅ |
+| `-5` | `mīnus pieci` | ✅ |
+| `5 -3` | `piecus mīnus trīs` | ✅ |
+| `(-5)` | `(mīnus pieci)` | ✅ |
+| `-5°C` | `mīnus pieci grādi` | ✅ |
+| `-5…-3°C` | `mīnus pieci līdz mīnus trīs grādi` | ✅ |

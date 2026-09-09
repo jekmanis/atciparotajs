@@ -1002,6 +1002,45 @@ BUCKET_STOP_CASES = [
     ("3.,4.vieta",          "trešā,ceturtā vieta"),
 ]
 
+# ============================================================
+# Identifikatori ar divām vai vairāk domuzīmēm nav diapazons
+# A token with two or more dashes is an identifier code, not a range
+# ============================================================
+_BIS_CODE = ("BIS-BL-astoņi divi septiņi astoņi četri seši-"
+             "viens viens četri četri divi seši")
+CODE_TOKEN_CASES = [
+    ("BIS-BL-827846-114426",    _BIS_CODE),
+    ("lieta BIS-BL-827846-114426, būvdarbu",
+     f"lieta {_BIS_CODE}, būvdarbu"),
+    ("“BIS-BL-827846-114426”",  f"“{_BIS_CODE}”"),
+    ("ISBN 978-9934-0-1234-5",
+     "ISBN deviņi septiņi astoņi-deviņi deviņi trīs četri-nulle-"
+     "viens divi trīs četri-pieci"),
+    # viena domuzīme joprojām ir diapazons / one dash is still a range
+    ("1941–1945 gads",
+     "tūkstoš deviņsimt četrdesmit pirmais līdz "
+     "tūkstoš deviņsimt četrdesmit piektais gads"),
+    ("5–6 grādi",       "pieci līdz seši grādi"),
+    ("0–2 mm",          "nulle līdz divi milimetri"),
+    ("10-20 procenti",  "desmit līdz divdesmit procenti"),
+    ("80–100 km/h",     "astoņdesmit līdz simts kilometru stundā"),
+]
+
+# ============================================================
+# Domuzīme pielipusi burtam nav mīnusa zīme
+# A hyphen glued to a letter is not a minus sign
+# ============================================================
+LETTER_MINUS_CASES = [
+    ("COVID-19",    "COVID-deviņpadsmit"),
+    ("LV-1010",     "LV-tūkstoš desmit"),
+    # īsts mīnuss joprojām strādā / real negatives still work
+    ("-5",          "mīnus pieci"),
+    ("5 -3",        "piecus mīnus trīs"),
+    ("(-5)",        "(mīnus pieci)"),
+    ("-5°C",        "mīnus pieci grādi"),
+    ("-5…-3°C",     "mīnus pieci līdz mīnus trīs grādi"),
+]
+
 
 @pytest.mark.parametrize("text,expected", ONE_CASES)
 def test_one_inflections(text, expected):
@@ -1312,4 +1351,14 @@ def test_glued_units_full_line(text, expected):
 
 @pytest.mark.parametrize("text,expected", BUCKET_STOP_CASES)
 def test_bucket_stops_at_closing_quote(text, expected):
+    assert convert(text) == expected
+
+
+@pytest.mark.parametrize("text,expected", CODE_TOKEN_CASES)
+def test_identifier_codes_are_not_ranges(text, expected):
+    assert convert(text) == expected
+
+
+@pytest.mark.parametrize("text,expected", LETTER_MINUS_CASES)
+def test_hyphen_after_letter_is_not_minus(text, expected):
     assert convert(text) == expected
