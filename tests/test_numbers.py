@@ -951,6 +951,57 @@ BILLION_CASES = [
     (1_000_000, "viens miljons"),
 ]
 
+# ============================================================
+# Mērvienības pēdiņās, iekavās vai pirms pieturzīmes
+# Units followed by a closing quote, bracket or "!?:"
+# ============================================================
+QUOTED_UNIT_CASES = [
+    ("“5km”",           "“pieci kilometri”"),
+    ("(5 km)",          "(pieci kilometri)"),
+    ("5km!",            "pieci kilometri!"),
+    ("5 km?",           "pieci kilometri?"),
+    ("5 km:",           "pieci kilometri:"),
+    ("“2,5kg”",         "“divi komats pieci kilogrami”"),
+    ("“10m²”",          "“desmit kvadrātmetru”"),
+    ("“0–2mm”",         "“nulle līdz divi milimetri”"),
+    ("“36°C”",          "“trīsdesmit seši grādi”"),
+    ("“100 km/h”",      "“simts kilometru stundā”"),
+    ("“5 m/s”",         "“pieci metri sekundē”"),
+    ("“53T”",           "“piecdesmit trīs tonnas”"),
+    ("“80–100 km/h”",   "“astoņdesmit līdz simts kilometru stundā”"),
+    ("2026.gada»",      "divi tūkstoši divdesmit sestā gada»"),
+    ("3.…",             "trešais…"),
+    # nemainīgi / unchanged: "min" and "kmh" are not unit abbreviations
+    ("5 min",           "pieci min"),
+    ("5min",            "piecimin"),
+    ("5 kmh",           "pieci kmh"),
+    ("2 mājas",         "divas mājas"),
+    ("5. maijs",        "piektais maijs"),
+]
+
+# Viss teikums ar pielipušām mērvienībām / whole line, nothing left unexpanded
+QUOTED_UNIT_LINE_CASES = [
+    ("Pielipušas mērvienības: “5km”, “2,5kg”, “10m²”, “0–2mm”, “5lpp.” "
+     "iepriekš deva “piecikm”. Saīsinājums pielipis pie cipara: "
+     "“Nr.5” deva “numurpieci”.",
+     "Pielipušas mērvienības: “pieci kilometri”, “divi komats pieci kilogrami”, "
+     "“desmit kvadrātmetru”, “nulle līdz divi milimetri”, “piecas lappuses” "
+     "iepriekš deva “piecikm”. Saīsinājums pielipis pie cipara: "
+     "“numur pieci” deva “numurpieci”."),
+]
+
+# ============================================================
+# Locījums nepārlec pāri aizverošai pēdiņai vai iekavai
+# Noun agreement stops at a closing quote/bracket
+# ============================================================
+BUCKET_STOP_CASES = [
+    ("“Nr.5” deva",         "“numur pieci” deva"),
+    ("(Nr. 5) mājas",       "(numur pieci) mājas"),
+    # komats, punkts un domuzīme neaptur / commas, dots and dashes do not stop it
+    ("1., 2. un 3. vieta",  "pirmā, otrā un trešā vieta"),
+    ("3.,4.vieta",          "trešā,ceturtā vieta"),
+]
+
 
 @pytest.mark.parametrize("text,expected", ONE_CASES)
 def test_one_inflections(text, expected):
@@ -1247,3 +1298,18 @@ def test_long_digit_strings(text, expected):
 @pytest.mark.parametrize("n,expected", BILLION_CASES)
 def test_billions(n, expected):
     assert cardinal(n) == expected
+
+
+@pytest.mark.parametrize("text,expected", QUOTED_UNIT_CASES)
+def test_units_before_closing_punctuation(text, expected):
+    assert convert(text) == expected
+
+
+@pytest.mark.parametrize("text,expected", QUOTED_UNIT_LINE_CASES)
+def test_glued_units_full_line(text, expected):
+    assert convert(text) == expected
+
+
+@pytest.mark.parametrize("text,expected", BUCKET_STOP_CASES)
+def test_bucket_stops_at_closing_quote(text, expected):
+    assert convert(text) == expected

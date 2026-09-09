@@ -810,3 +810,43 @@ Auto-generated after each `pytest` run. Shows every parametrised case with its l
 | `n=1000000000` | `viens miljards` | ✅ |
 | `n=2500000000` | `divi miljardi piecsimt miljoni` | ✅ |
 | `n=1000000` | `viens miljons` | ✅ |
+
+## Units Before Closing Punctuation
+
+| Input | Expected | Result |
+|-------|----------|--------|
+| `“5km”` | `“pieci kilometri”` | ✅ |
+| `(5 km)` | `(pieci kilometri)` | ✅ |
+| `5km!` | `pieci kilometri!` | ✅ |
+| `5 km?` | `pieci kilometri?` | ✅ |
+| `5 km:` | `pieci kilometri:` | ✅ |
+| `“2,5kg”` | `“divi komats pieci kilogrami”` | ✅ |
+| `“10m²”` | `“desmit kvadrātmetru”` | ✅ |
+| `“0–2mm”` | `“nulle līdz divi milimetri”` | ✅ |
+| `“36°C”` | `“trīsdesmit seši grādi”` | ✅ |
+| `“100 km/h”` | `“simts kilometru stundā”` | ✅ |
+| `“5 m/s”` | `“pieci metri sekundē”` | ✅ |
+| `“53T”` | `“piecdesmit trīs tonnas”` | ✅ |
+| `“80–100 km/h”` | `“astoņdesmit līdz simts kilometru stundā”` | ✅ |
+| `2026.gada»` | `divi tūkstoši divdesmit sestā gada»` | ✅ |
+| `3.…` | `trešais…` | ✅ |
+| `5 min` | `pieci min` | ✅ |
+| `5min` | `piecimin` | ✅ |
+| `5 kmh` | `pieci kmh` | ✅ |
+| `2 mājas` | `divas mājas` | ✅ |
+| `5. maijs` | `piektais maijs` | ✅ |
+
+## Glued Units Full Line
+
+| Input | Expected | Result |
+|-------|----------|--------|
+| `Pielipušas mērvienības: “5km”, “2,5kg”, “10m²”, “0–2mm”, “5lpp.” iepriekš deva “piecikm”. Saīsinājums pielipis pie cipara: “Nr.5” deva “numurpieci”.` | `Pielipušas mērvienības: “pieci kilometri”, “divi komats pieci kilogrami”, “desmit kvadrātmetru”, “nulle līdz divi milimetri”, “piecas lappuses” iepriekš deva “piecikm”. Saīsinājums pielipis pie cipara: “numur pieci” deva “numurpieci”.` | ✅ |
+
+## Bucket Stops At Closing Quote
+
+| Input | Expected | Result |
+|-------|----------|--------|
+| `“Nr.5” deva` | `“numur pieci” deva` | ✅ |
+| `(Nr. 5) mājas` | `(numur pieci) mājas` | ✅ |
+| `1., 2. un 3. vieta` | `pirmā, otrā un trešā vieta` | ✅ |
+| `3.,4.vieta` | `trešā,ceturtā vieta` | ✅ |

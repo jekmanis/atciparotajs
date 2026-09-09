@@ -13,7 +13,11 @@ from atciparotajs.currency import currency as _currency, CURRENCY_FORMS
 
 # What may follow an ordinal dot: whitespace, end of text, a letter glued to
 # the dot ("2026.gada", "XX.gadsimts") or closing punctuation ("3., 4. vieta").
-_AFTER_ORD = r'(?=\s|$|[^\W\d_]|[,;:)\]!?”"\'])'
+_AFTER_ORD = r'(?=\s|$|[^\W\d_]|[,;:)\]!?”"\'’»…])'
+
+# End of a unit or symbol: anything but a letter or digit may follow
+# ("5 km”", "(36°C)", "5 km!"), while "5 min" and "5 kmh" stay untouched.
+_UNIT_END = r'(?![^\W_])'
 
 # Groups: 1,2=decimal; 3=arabic ordinal; 4=roman ordinal; 5=roman cardinal; 6=arabic cardinal
 PATTERN = re.compile(
@@ -88,7 +92,7 @@ _UNIT_MAP = {
     "g.":  ("grams",      "grami",      "gramu"),
 }
 _UNIT_ABBR_RE = "|".join(re.escape(k) for k in sorted(_UNIT_MAP, key=len, reverse=True))
-_UNIT_PAT = re.compile(rf'{_DEC_NUM}\s*({_UNIT_ABBR_RE})(?=\s|$|[,.])')
+_UNIT_PAT = re.compile(rf'{_DEC_NUM}\s*({_UNIT_ABBR_RE}){_UNIT_END}')
 
 # Superscript units: km², m², m³, km³
 _SUPER_UNIT_MAP = {
@@ -98,7 +102,7 @@ _SUPER_UNIT_MAP = {
     "m³":  ("kubikmetrs",       "kubikmetri",       "kubikmetru"),
 }
 _SUPER_ABBR_RE = "|".join(re.escape(k) for k in sorted(_SUPER_UNIT_MAP, key=len, reverse=True))
-_SUPER_PAT = re.compile(rf'{_DEC_NUM}\s*({_SUPER_ABBR_RE})(?=\s|$|[,.])')
+_SUPER_PAT = re.compile(rf'{_DEC_NUM}\s*({_SUPER_ABBR_RE}){_UNIT_END}')
 
 # Negative numbers: "-N" at word boundary, not preceded by a digit (avoid ranges like "5-6")
 _NEG_PAT = re.compile(r'(?<!\d)-(\d+(?:[.,]\d+)?)')
@@ -140,7 +144,7 @@ _CAP_WORD_AFTER = re.compile(r'^\s*[A-ZĀČĒĢĪĶĻŅŠŪŽ]')
 
 # Currency patterns — amount with symbol or ISO code
 # Tonne: "53T" or "53 T" → "piecdesmit trīs tonnas" (feminine)
-_TONNE_PAT = re.compile(rf'{_DEC_NUM}\s*T(?=\s|$|[,.])')
+_TONNE_PAT = re.compile(rf'{_DEC_NUM}\s*T{_UNIT_END}')
 
 # Temperature: "36°C", "100°F", "90°", "21 °C", "+21°C", "+14…+15 °C", "-5…-3°C"
 # Range separators: ellipsis ("…" or "..."), en/em dash, hyphen — spaces optional.
@@ -148,7 +152,7 @@ _TEMP_SEP = r'\s*(?:\.\.\.|[…–—-])\s*'
 # Optional second operand of a range; groups: 3=sign, 4=number
 _TEMP_RANGE = rf'(?:{_TEMP_SEP}([+-]?){_DEC_NUM})?'
 # Groups: 1=sign, 2=number, 3=sign, 4=number
-_TEMP_PAT = re.compile(rf'([+-]?){_DEC_NUM}{_TEMP_RANGE}\s*°[CF]?(?=\s|$|[,.;:!?)])')
+_TEMP_PAT = re.compile(rf'([+-]?){_DEC_NUM}{_TEMP_RANGE}\s*°[CF]?{_UNIT_END}')
 
 # Signed values and ranges written out as "… grādi" ("+5 grādi", "+14…+15 grādi").
 # The noun itself is left as the author wrote it; only signs and the range are expanded.
@@ -176,16 +180,16 @@ _CLASS_PAT = re.compile(r'(\d+)\.([A-Za-z])\s+((?:klase|klaš)\w*)', re.IGNORECA
 # Speed: "100 km/h", "5 m/s"
 _KMH_FORMS = ("kilometrs", "kilometri", "kilometru")
 _MS_FORMS = ("metrs", "metri", "metru")
-_SPEED_PAT = re.compile(rf'{_DEC_NUM}\s*km/h(?=\s|$|[,.;])')
-_MS_SPEED_PAT = re.compile(rf'{_DEC_NUM}\s*m/s(?=\s|$|[,.;])')
+_SPEED_PAT = re.compile(rf'{_DEC_NUM}\s*km/h{_UNIT_END}')
+_MS_SPEED_PAT = re.compile(rf'{_DEC_NUM}\s*m/s{_UNIT_END}')
 
 # Ranges of counted amounts: "0–2 mm", "1,5–3 km", "5–8 m/s", "80–100 km/h".
 # These must run before the generic range patterns, which would spell the digits
 # out and leave the unit abbreviation behind unexpanded.
 _UNIT_RANGE_PAT = re.compile(
-    rf'{_DEC_NUM}{_AMT_RANGE_SEP}{_DEC_NUM}\s*({_UNIT_ABBR_RE})(?=\s|$|[,.;])')
-_SPEED_RANGE_PAT = re.compile(rf'{_DEC_NUM}{_AMT_RANGE_SEP}{_DEC_NUM}\s*km/h(?=\s|$|[,.;])')
-_MS_SPEED_RANGE_PAT = re.compile(rf'{_DEC_NUM}{_AMT_RANGE_SEP}{_DEC_NUM}\s*m/s(?=\s|$|[,.;])')
+    rf'{_DEC_NUM}{_AMT_RANGE_SEP}{_DEC_NUM}\s*({_UNIT_ABBR_RE}){_UNIT_END}')
+_SPEED_RANGE_PAT = re.compile(rf'{_DEC_NUM}{_AMT_RANGE_SEP}{_DEC_NUM}\s*km/h{_UNIT_END}')
+_MS_SPEED_RANGE_PAT = re.compile(rf'{_DEC_NUM}{_AMT_RANGE_SEP}{_DEC_NUM}\s*m/s{_UNIT_END}')
 
 # Age-gate label: "18+" → "astoņpadsmit plus"
 _AGE_GATE_PAT = re.compile(r'\b(\d+)\+')
@@ -500,6 +504,10 @@ def _expand_pct(m: re.Match, full_text: str) -> str:
 
 _SKIP_WORDS = {"un", "vai", "bet", "arī", "kā", "ar"}
 
+# Characters that end the phrase a number belongs to: a following noun no
+# longer governs its case ("“Nr.5” deva", "(Nr. 5) mājas").
+_BUCKET_STOP = re.compile(r'[”"’»)\]!?;:]')
+
 # Prepositions that introduce a new phrase; when one follows a genitive noun,
 # that noun is the head (not a genitive modifier), so the look-ahead must stop.
 _PREP_WORDS = {"līdz", "no", "uz", "par", "pie", "pēc", "aiz", "pār", "ap",
@@ -511,6 +519,11 @@ def _next_word_bucket(text: str, pos: int) -> int:
     rest = text[pos:]
     m = LAT_WORD.search(rest)
     if not m:
+        return 1
+    # A closing quote/bracket or sentence-final punctuation cuts the phrase off:
+    # in "“Nr.5” deva" the case must not be taken from "deva". Commas, dots,
+    # digits and dashes do not stop it ("1., 2. un 3. vieta").
+    if _BUCKET_STOP.search(rest[:m.start()]):
         return 1
     word = m.group(0)
     if word.lower() in _SKIP_WORDS:
